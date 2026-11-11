@@ -77,6 +77,10 @@ The root shell and routed book pages use separate HTML files. Small presentation
 Templates use `@if`, `@switch`, and `@for` with stable book IDs. The small shared presentation components use
 `OnPush`; pages subscribe to request state once through the async pipe.
 
+The standalone [book review example](src/components/book-review-example.component.ts) is an intentionally flawed fixture
+for pull-request code-review exercises. It lives under the requested `src/components/` path and is not part of the routed
+application. Its defects are deliberate review material rather than production conventions to copy.
+
 ## Runtime architecture and data flow
 
 ```mermaid

@@ -1,37 +1,67 @@
 name: Issue Implementation Preparation
 
 on:
- issues:
+  issues:
      types: [labeled]
 
 jobs:
- prepare-implementation:
-     if: github.event.label.name == 'ready-for-implementation'
-     runs-on: ubuntu-latest
-     timeout-minutes: 15
-     permissions:
-         contents: write
-         issues: write
-         pull-requests: write
+  prepare-implementation:
+    if: github.event.label.name == 'ready-for-implementation'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
 
-     steps:
-         - name: Checkout repository
-           uses: actions/checkout@v4
-           with:
-               fetch-depth: 0
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-         - name: Prepare Feature Branch
-           id: prepare-branch
-           run: |
-               /ci-se-green
+      - name: Configure Codex
+        run: |
+          mkdir -p "$RUNNER_TEMP/codex-home"
+      
+          cat > "$RUNNER_TEMP/codex-home/config.toml" <<'EOF'
+          default_permissions = "github-issues"
+      
+          [features]
+          network_proxy = true
+      
+          [permissions.github-issues]
+          extends = ":workspace"
+      
+          [permissions.github-issues.network]
+          enabled = true
+      
+          [permissions.github-issues.network.domains]
+          "api.github.com" = "allow"
+          "github.com" = "allow"
+
+          [permissions.github-issues.filesystem]
+          ":workspace_roots" = { ".git" = "write" }
+          EOF
+
+      - name: Analyze Issue with Codex
+        uses: openai/codex-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          codex-home: ${{ runner.temp }}/codex-home
+          permission-profile: github-issues
+          safety-strategy: drop-sudo
+          model: "gpt-5.6-luna"
+          prompt: |
+            /ci-se-green
                                  
-               ISSUE_NUMBER=${{ github.event.issue.number }}
-               ISSUE_TITLE="${{ github.event.issue.title }}"
-               
-                                 # Convert to lowercase and replace spaces with hyphens, format: feature/{number}-{title}
-               BRANCH_NAME=$(echo "feature/${ISSUE_NUMBER}-${ISSUE_TITLE}" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g' | sed 's/[^a-z0-9\-\/]//g')
-
-               git config user.name "github-actions[bot]"
-               git config user.email "github-actions[bot]@users.noreply.github.com"
-           env:
-               GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            ISSUE_NUMBER=${{ github.event.issue.number }}
+            ISSUE_TITLE="${{ github.event.issue.title }}"
+            
+            # Convert to lowercase and replace spaces with hyphens, format: feature/{number}-{title}
+            BRANCH_NAME=$(echo "feature/${ISSUE_NUMBER}-${ISSUE_TITLE}" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g' | sed 's/[^a-z0-9\-\/]//g')
+            
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
