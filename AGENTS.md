@@ -70,7 +70,7 @@ Run commands from the repository root. See [README.md](README.md) for setup.
   behavior. For documentation-only changes, check formatting, links, and consistency with the source.
 - Playwright starts or reuses the frontend server. Install the matching browser with `npx playwright install chromium` if
   needed; keep machine-specific executable paths out of committed configuration.
-- The book details, book list, library/editing, error handling, and theme specs in `tests/` cover application behavior with shared mocked
+- The book details, book list, library/editing, Universe, error handling, and theme specs in `tests/` cover application behavior with shared mocked
   book/cover fixtures. `tests/example.spec.ts` visits `playwright.dev`, and
   `tests-examples/` is outside the configured test directory; those examples do not establish BookMonkey coverage.
 - `npm test` points to a Karma scaffold with no source specs or directly declared Karma/Jasmine dependencies. Account for

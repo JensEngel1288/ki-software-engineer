@@ -3,6 +3,47 @@
     <h1 class="text-3xl font-bold text-accent">Book Collection</h1>
     <p class="mt-2 text-sm text-secondary">Your saved books, reading status, and edits stay in this browser.</p>
   </div>
+  <div
+    class="mb-6 flex gap-1 rounded-xl border border-divider bg-muted-surface p-1 sm:w-fit"
+    role="tablist"
+    aria-label="Book display"
+  >
+    <button
+      id="gallery-tab"
+      type="button"
+      role="tab"
+      class="button-secondary flex-1 gap-2 sm:flex-none"
+      aria-controls="gallery-panel"
+      [attr.aria-selected]="displayMode() === 'gallery'"
+      [attr.tabindex]="displayMode() === 'gallery' ? 0 : -1"
+      (click)="displayMode.set('gallery')"
+      (keydown)="onDisplayKeydown($event)"
+    >
+      <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="3" width="5" height="6" rx="1" />
+        <rect x="12" y="3" width="5" height="6" rx="1" />
+        <rect x="3" y="12" width="5" height="5" rx="1" />
+        <rect x="12" y="12" width="5" height="5" rx="1" />
+      </svg>
+      Gallery
+    </button>
+    <button
+      id="universe-tab"
+      type="button"
+      role="tab"
+      class="button-secondary flex-1 gap-2 sm:flex-none"
+      aria-controls="universe-panel"
+      [attr.aria-selected]="displayMode() === 'universe'"
+      [attr.tabindex]="displayMode() === 'universe' ? 0 : -1"
+      (click)="displayMode.set('universe')"
+      (keydown)="onDisplayKeydown($event)"
+    >
+      <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M10 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" />
+      </svg>
+      Universe
+    </button>
+  </div>
   <div class="mb-6 flex flex-wrap gap-2" role="group" aria-label="Collection views">
     <button type="button" class="button-secondary" [attr.aria-pressed]="query.view === 'all'" (click)="setView('all')">
       All books
@@ -39,45 +80,58 @@
     }
   </div>
   <app-book-filters [filters]="query" (filtersChange)="onFiltersChange($event)"></app-book-filters>
-  @if (state$ | async; as state) {
-    @switch (state.status) {
-      @case ('loading') {
-        <app-loading-indicator message="Loading books..."></app-loading-indicator>
-      }
-      @case ('error') {
-        <app-state-message role="alert" [message]="state.message">
-          <h2 state-title class="state-title">Unable to load books</h2>
-          <button type="button" (click)="retry()" class="button-primary mt-6">Try again</button>
-        </app-state-message>
-      }
-      @case ('ready') {
-        <p class="mb-5 text-sm text-secondary" aria-live="polite">
-          {{ state.data.total }} matching books · {{ state.data.books.length }} shown
-        </p>
-        <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          @for (book of state.data.books; track book.id) {
-            <app-book-item
-              [book]="book"
-              [saved]="state.data.library.savedIds.includes(book.id)"
-              [readingStatus]="state.data.library.readingStatuses[book.id] || ''"
-              (savedToggle)="library.toggleSaved(book.id)"
-              (readingStatusChange)="library.setReadingStatus(book.id, $event)"
-            ></app-book-item>
-          } @empty {
-            <app-state-message
-              class="col-span-full"
-              message="Try another view, change your search, or reset the filters."
-            >
-              <h2 state-title class="state-title">{{ emptyTitle }}</h2>
-            </app-state-message>
+  <div
+    role="tabpanel"
+    [id]="displayMode() + '-panel'"
+    [attr.aria-labelledby]="displayMode() + '-tab'"
+    tabindex="0"
+    class="focus-ring rounded-sm"
+  >
+    @if (state$ | async; as state) {
+      @switch (state.status) {
+        @case ('loading') {
+          <app-loading-indicator message="Loading books..."></app-loading-indicator>
+        }
+        @case ('error') {
+          <app-state-message role="alert" [message]="state.message">
+            <h2 state-title class="state-title">Unable to load books</h2>
+            <button type="button" (click)="retry()" class="button-primary mt-6">Try again</button>
+          </app-state-message>
+        }
+        @case ('ready') {
+          <p class="mb-5 text-sm text-secondary" aria-live="polite">
+            {{ state.data.total }} matching books ·
+            {{ displayMode() === 'universe' ? state.data.total : state.data.books.length }} shown
+          </p>
+          @if (displayMode() === 'universe' && state.data.total > 0) {
+            <app-book-universe [books]="state.data.matchingBooks"></app-book-universe>
+          } @else {
+            <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              @for (book of state.data.books; track book.id) {
+                <app-book-item
+                  [book]="book"
+                  [saved]="state.data.library.savedIds.includes(book.id)"
+                  [readingStatus]="state.data.library.readingStatuses[book.id] || ''"
+                  (savedToggle)="library.toggleSaved(book.id)"
+                  (readingStatusChange)="library.setReadingStatus(book.id, $event)"
+                ></app-book-item>
+              } @empty {
+                <app-state-message
+                  class="col-span-full"
+                  message="Try another view, change your search, or reset the filters."
+                >
+                  <h2 state-title class="state-title">{{ emptyTitle }}</h2>
+                </app-state-message>
+              }
+            </div>
           }
-        </div>
-        @if (state.data.hasMore) {
-          <div class="mt-8 text-center">
-            <button type="button" class="button-primary" (click)="showMore()">Show more books</button>
-          </div>
+          @if (displayMode() === 'gallery' && state.data.hasMore) {
+            <div class="mt-8 text-center">
+              <button type="button" class="button-primary" (click)="showMore()">Show more books</button>
+            </div>
+          }
         }
       }
     }
-  }
+  </div>
 </div>

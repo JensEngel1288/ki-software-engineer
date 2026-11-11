@@ -125,6 +125,30 @@ The catalogue is reloaded when the collection page is recreated; no query-cache 
 whole dataset fits the current workshop catalogue. A substantially larger collection would need a backend contract that
 can combine original records and per-user edits before server-side filtering/pagination.
 
+### Gallery and interactive Universe
+
+The home page has Gallery and Universe display tabs, independent of the All books/Read later/Recently viewed collection
+selection. Switching display keeps the same search, filters, sorting, membership, and catalogue subscription. The gallery
+keeps its extendable visible-result limit. `CollectionPage.matchingBooks` exposes every filtered/sorted match to the map,
+including books beyond the initial ten cards; neither tab starts another catalogue request.
+
+[BookUniverseComponent](src/app/books/book-universe.component.ts) owns only map presentation, selection, and camera
+interaction. Its [HTML](src/app/books/book-universe.component.html) and [CSS](src/app/books/book-universe.component.css)
+render an SVG star map, native controls, and a shared-cover preview linked to the existing details route. The pure
+[layout function](src/app/books/book-universe-layout.ts) positions books deterministically in constellations grouped by
+publisher or author, using the currently displayed metadata including local edits. It preserves the query's book order
+for keyboard navigation and the native book selector. No genre metadata, new route, dependency, or API write is added.
+
+The camera supports bounded zoom, pointer dragging/capture, Ctrl/Meta-wheel zoom, keyboard panning, and Fit all. Each
+star has an accessible name and selected state; one star participates in tab order, with arrow/Home/End navigation
+between stars. The native selector provides an alternative to small visual targets on narrow screens. Star labels and
+decorative glows do not intercept the interactive hit area. New matching data or grouping resets the overview and keeps
+the selected book where still present. Map state and display selection are local to the page, not persisted preferences.
+
+Loading, retry/error, and empty feedback remain owned by the collection page in either display. The map adapts its
+preview below the canvas on narrow screens; the star field intentionally keeps its dark astronomical palette in both
+application themes. Outside the chart, controls and preview use the existing semantic theme styles.
+
 ### Browser-local library and editing
 
 The user explicitly chose to store all changes in this browser. `BookLibraryService.initialize()` is called through
@@ -214,6 +238,9 @@ responses, and captured application error reports. They do not require a running
   deduplicated runtime reporting.
 - [theme.spec.ts](tests/theme.spec.ts): keyboard switching, actual color changes, preference precedence, navigation/reload,
   system defaults, narrow screens, and blocked storage.
+- [universe.spec.ts](tests/universe.spec.ts): display tabs and keyboard focus, preserved query/personal views, 250 matching
+  stars before gallery limits, no extra catalogue requests, preview/details navigation, zoom/drag/Fit, keyboard star
+  navigation, grouping, loading/error/retry/empty feedback, and 320px layouts in both themes.
 - [example.spec.ts](tests/example.spec.ts) and [tests-examples/](tests-examples/) remain external demonstration scaffolding.
   Karma still has no source specs or directly declared Karma/Jasmine dependencies.
 
@@ -221,7 +248,7 @@ Playwright starts or reuses the frontend at port 4200. Install the matching brow
 A portable selected-suite command is:
 
 ```sh
-npx playwright test tests/book-details.spec.ts tests/book-list.spec.ts tests/library.spec.ts tests/error-handling.spec.ts tests/theme.spec.ts --project=chromium
+npx playwright test tests/book-details.spec.ts tests/book-list.spec.ts tests/library.spec.ts tests/error-handling.spec.ts tests/theme.spec.ts tests/universe.spec.ts --project=chromium
 ```
 
 The unused NgRx, toolkit, query, and server packages listed above remain declared workshop options. This refactoring uses

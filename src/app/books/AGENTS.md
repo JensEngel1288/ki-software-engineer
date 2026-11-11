@@ -32,6 +32,14 @@ query lifecycle and error-reporting boundaries.
   [book-edit-form.component.ts](book-edit-form.component.ts). Save updates browser state; Cancel must not mutate the book.
   Preserve IDs, keep price as display text, and validate a nonblank title and positive whole-number page count.
 
+- [book-universe.component.ts](book-universe.component.ts) owns the home-page Universe display's SVG, preview, selection,
+  and camera controls. [book-universe-layout.ts](book-universe-layout.ts) provides pure deterministic constellation layout
+  by publisher/author. Keep it free of HTTP, storage, and navigation side effects; the preview uses the existing details
+  link and shared cover component. Preserve keyboard access, native selection, drag/zoom/Fit, and narrow-screen usability.
+- Gallery/Universe display selection is independent of collection membership. `CollectionPage.matchingBooks` contains all
+  filtered/sorted matches for the map; `books` remains the limited gallery page. Switching display must preserve the
+  query and existing subscription. Keep loading/error/empty UI owned by the collection page in both displays.
+
 ## API and navigation contracts
 
 - The API runs separately at `http://localhost:4730/books` by default. Its URL is supplied through `BOOK_API_URL` in
@@ -58,6 +66,8 @@ query lifecycle and error-reporting boundaries.
   from the repository root for relevant feature changes. Include `tests/library.spec.ts` for personal state/editing and
   `tests/theme.spec.ts` for shared styling/theme changes. Shared fixtures intercept book and cover requests, so the suites
   do not require the external API.
+- Include `tests/universe.spec.ts` for display switching, full-match projection, constellation layout/interactions, and
+  shared query changes. It covers a 250-book collection, keyboard controls, and both themes at 320px.
 - Existing coverage includes title-link keyboard navigation, displayed fields, direct URLs, reloads, loading, failed
   requests and retries, missing books, missing/broken covers, and a narrow viewport without a subtitle. Verify affected
   behavior beyond these cases when needed. The list/error suites also cover actual title matching, sorting, combined

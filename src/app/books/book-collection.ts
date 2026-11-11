@@ -21,6 +21,7 @@ export interface CollectionQuery extends BookFilters {
 
 export interface CollectionPage {
   books: Book[];
+  matchingBooks: Book[];
   total: number;
   hasMore: boolean;
   library: BookLibrary;
@@ -63,5 +64,11 @@ export function selectBooks(catalogue: Book[], library: BookLibrary, query: Coll
   } else if (query.view === 'recent') {
     books.sort((a, b) => library.recentIds.indexOf(a.id) - library.recentIds.indexOf(b.id));
   }
-  return { books: books.slice(0, query.limit), total: books.length, hasMore: books.length > query.limit, library };
+  return {
+    books: books.slice(0, query.limit),
+    matchingBooks: books,
+    total: books.length,
+    hasMore: books.length > query.limit,
+    library
+  };
 }

@@ -42,17 +42,27 @@ test('SM1: display tabs support keyboard switching and preserve collection/searc
   await expect(page.locator('app-book-item')).toHaveCount(1);
 });
 
-test('SM2: the map includes all matching books before gallery limits, without extra catalogue requests', async ({ page }) => {
+test('SM2: the map includes all matching books before gallery limits, without extra catalogue requests', async ({
+  page
+}) => {
+  const denseCatalogue = [
+    ...catalogue,
+    ...Array.from({ length: 250 - catalogue.length }, (_, index) => ({
+      ...book,
+      id: `dense-${index}`,
+      title: `Catalogue Entry ${index + 1}`
+    }))
+  ];
   let requests = 0;
   page.on('request', request => {
     if (request.url() === apiUrl) requests++;
   });
-  await mockBooks(page, catalogue);
+  await mockBooks(page, denseCatalogue);
   await page.goto(appUrl);
   await expect(page.locator('app-book-item')).toHaveCount(10);
   await page.getByRole('tab', { name: 'Universe', exact: true }).click();
   const stars = page.getByRole('button', { name: /^Select book:/ });
-  await expect(stars).toHaveCount(catalogue.length);
+  await expect(stars).toHaveCount(denseCatalogue.length);
   await expect(page.getByRole('button', { name: 'Show more books', exact: true })).toHaveCount(0);
   await page.getByLabel('Search books', { exact: true }).fill('j');
   await expect(stars).toHaveCount(1);
@@ -67,7 +77,28 @@ test('SM2: the map includes all matching books before gallery limits, without ex
   expect(requests).toBe(1);
 });
 
-test('SM3: selecting stars and the native selector previews books and opens their stable detail route', async ({ page }) => {
+test('SM6: display tabs remain usable while the catalogue is loading', async ({ page }) => {
+  let release!: () => void;
+  const responseReady = new Promise<void>(resolve => {
+    release = resolve;
+  });
+  await page.route(apiUrl, async route => {
+    await responseReady;
+    await route.fulfill({ json: catalogue, headers: apiHeaders });
+  });
+  await page.goto(appUrl);
+  try {
+    await page.getByRole('tab', { name: 'Universe', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('Loading books...');
+  } finally {
+    release();
+  }
+  await expect(page.getByRole('group', { name: 'Interactive book star map', exact: true })).toBeVisible();
+});
+
+test('SM3: selecting stars and the native selector previews books and opens their stable detail route', async ({
+  page
+}) => {
   await mockBooks(page, catalogue);
   await page.goto(appUrl);
   await page.getByRole('tab', { name: 'Universe', exact: true }).click();
@@ -79,7 +110,10 @@ test('SM3: selecting stars and the native selector previews books and opens thei
   await expect(preview.getByRole('img', { name: 'Node.js Guide', exact: true })).toBeVisible();
   await page.getByRole('combobox', { name: 'Choose a book', exact: true }).selectOption('extra-11');
   await expect(preview.getByRole('heading', { name: 'Extra Book 12', exact: true })).toBeVisible();
-  await expect(preview.getByRole('link', { name: 'Open book details', exact: true })).toHaveAttribute('href', '/books/extra-11');
+  await expect(preview.getByRole('link', { name: 'Open book details', exact: true })).toHaveAttribute(
+    'href',
+    '/books/extra-11'
+  );
   await preview.getByRole('link', { name: 'Open book details', exact: true }).click();
   await expect(page).toHaveURL(appUrl + '/books/extra-11');
   await expect(page.getByRole('article').getByRole('heading', { name: 'Extra Book 12', exact: true })).toBeVisible();
@@ -144,7 +178,11 @@ test('SM6: Universe retains catalogue error/retry and explains empty matches', a
   let attempts = 0;
   await page.route(apiUrl, route => {
     attempts++;
-    return route.fulfill({ status: attempts === 1 ? 503 : 200, json: attempts === 1 ? {} : catalogue, headers: apiHeaders });
+    return route.fulfill({
+      status: attempts === 1 ? 503 : 200,
+      json: attempts === 1 ? {} : catalogue,
+      headers: apiHeaders
+    });
   });
   await page.goto(appUrl);
   await expect(page.getByRole('heading', { name: 'Unable to load books' })).toBeVisible();

@@ -1,5 +1,5 @@
 import { AsyncPipe } from '@angular/common';
-import { Component, inject, Input } from '@angular/core';
+import { Component, inject, Input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BehaviorSubject, catchError, combineLatest, map, of, startWith, Subject, switchMap, timer } from 'rxjs';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator.component';
@@ -17,6 +17,7 @@ import {
 import { BookFiltersComponent } from './book-filters.component';
 import { BookItemComponent } from './book-item.component';
 import { BookLibraryService } from './book-library.service';
+import { BookUniverseComponent } from './book-universe.component';
 import { RequestState } from './request-state';
 
 @Component({
@@ -27,6 +28,7 @@ import { RequestState } from './request-state';
     FormsModule,
     BookItemComponent,
     BookFiltersComponent,
+    BookUniverseComponent,
     LoadingIndicatorComponent,
     StateMessageComponent
   ],
@@ -51,6 +53,18 @@ export class BookListComponent {
   }
 
   protected searchTerm = '';
+  protected readonly displayMode = signal<'gallery' | 'universe'>('gallery');
+
+  protected onDisplayKeydown(event: KeyboardEvent): void {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const index = event.key === 'Home' ? 0 : event.key === 'End' ? 1 : this.displayMode() === 'gallery' ? 1 : 0;
+    this.displayMode.set(index === 0 ? 'gallery' : 'universe');
+    (event.currentTarget as HTMLButtonElement).parentElement
+      ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+      .item(index)
+      ?.focus();
+  }
   protected get query(): CollectionQuery {
     return this.events.value.query;
   }
