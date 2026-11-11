@@ -1,1 +1,76 @@
 @import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-page: var(--app-page);
+  --color-surface: var(--app-surface);
+  --color-muted-surface: var(--app-muted-surface);
+  --color-content: var(--app-content);
+  --color-secondary: var(--app-secondary);
+  --color-muted: var(--app-muted);
+  --color-divider: var(--app-divider);
+  --color-control: var(--app-control);
+  --color-accent: var(--app-accent);
+  --color-action: var(--app-action);
+  --color-action-hover: var(--app-action-hover);
+}
+
+:root {
+  color-scheme: light;
+  --app-page: var(--color-white);
+  --app-surface: var(--color-white);
+  --app-muted-surface: var(--color-gray-100);
+  --app-content: var(--color-gray-900);
+  --app-secondary: var(--color-gray-600);
+  --app-muted: var(--color-gray-500);
+  --app-divider: var(--color-gray-200);
+  --app-control: var(--color-gray-300);
+  --app-accent: var(--color-blue-700);
+  --app-action: var(--color-blue-600);
+  --app-action-hover: var(--color-blue-700);
+}
+
+:root.dark {
+  color-scheme: dark;
+  --app-page: var(--color-gray-950);
+  --app-surface: var(--color-gray-900);
+  --app-muted-surface: var(--color-gray-800);
+  --app-content: var(--color-gray-100);
+  --app-secondary: var(--color-gray-300);
+  --app-muted: var(--color-gray-400);
+  --app-divider: var(--color-gray-700);
+  --app-control: var(--color-gray-600);
+  --app-accent: var(--color-blue-400);
+}
+
+body {
+  @apply min-h-screen bg-page text-content;
+}
+
+@layer components {
+  .form-control {
+    @apply w-full min-w-0 rounded-md border border-control bg-surface px-3 py-2 font-normal text-content placeholder:text-muted;
+  }
+
+  .button-secondary {
+    @apply inline-flex cursor-pointer items-center justify-center rounded-md border border-divider bg-surface px-3 py-2 text-sm font-medium hover:bg-muted-surface aria-pressed:border-action aria-pressed:bg-action aria-pressed:text-white aria-pressed:hover:bg-action-hover;
+  }
+
+  .button-primary {
+    @apply inline-flex cursor-pointer items-center justify-center rounded-md bg-action px-4 py-2 font-medium text-white transition-colors hover:bg-action-hover disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none;
+  }
+
+  .text-link {
+    @apply rounded-sm text-accent hover:underline;
+  }
+
+  .state-title {
+    @apply mb-3 text-2xl font-bold;
+  }
+
+  :where(.focus-ring, .button-primary, .button-secondary, .form-control, .text-link):focus-visible {
+    outline: 2px solid var(--app-accent);
+    outline-offset: 2px;
+  }
+}

@@ -1,0 +1,229 @@
+# Application architecture
+
+BookMonkey is a browser-rendered Angular application for browsing, searching, sorting, filtering, and organizing a book collection, with browser-local book editing, personal lists, and a persistent light/dark preference. This document describes the implementation in this repository, including the difference between dependencies used by the application and packages declared for capabilities that are not currently implemented.
+
+## Tech stack and dependencies
+
+Versions below are the declarations in [package.json](./package.json). [package-lock.json](./package-lock.json) records the resolved dependency tree; a leading `^` denotes a version range rather than an exact pin.
+
+### Application dependencies in use
+
+| Dependency                                                                           | Declared version    | Role in this application                                                                                                                             |
+| ------------------------------------------------------------------------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@angular/core`, `@angular/common`, `@angular/compiler`, `@angular/platform-browser` | `20.2.1`            | Components, dependency injection, common template directives, template compilation, browser bootstrap, and `HttpClient` from `@angular/common/http`. |
+| `@angular/router`                                                                    | `20.2.1`            | Displays the book list and book details in the root router outlet and redirects unknown URLs to the home route.                                      |
+| `@angular/forms`                                                                     | `20.2.1`            | Template-driven search/filter controls, personal reading-status controls, and validated book-editing drafts.                                         |
+| `rxjs`                                                                               | `7.8.0`             | Supplies typed API and view-state streams, cancels obsolete searches and route requests, and coordinates retries.                                    |
+| `zone.js`                                                                            | `0.15.0`            | Loaded as a polyfill; zone-based change detection is configured with event coalescing.                                                               |
+| `@angular/animations`                                                                | `20.2.1`            | Animation support is registered through `provideAnimations()`.                                                                                       |
+| `@angular/material`, `@angular/cdk`                                                  | `^20.2.0`, `20.2.0` | Material snackbar support in `ToastService`, with CDK as supporting UI infrastructure. The current book screen does not call the toast service.      |
+| `tslib`                                                                              | `2.3.0`             | Runtime helpers for TypeScript compilation; `importHelpers` is enabled.                                                                              |
+
+### Development and styling dependencies
+
+| Dependency                            | Declared version      | Purpose                                                                                                                     |
+| ------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `typescript`                          | `5.9.2`               | Application language with strict type checking and an ES2022 target.                                                        |
+| `@angular/cli`, `@angular/build`      | `20.2.0`              | CLI commands, application builds, and the development server.                                                               |
+| `@angular/compiler-cli`               | `20.2.1`              | Angular compilation and template type checking.                                                                             |
+| `tailwindcss`, `@tailwindcss/postcss` | `4.1.12`              | Utility classes for layout, responsive book cards, colors, and loading indicators.                                          |
+| `postcss`                             | `8.5.6`               | Runs the Tailwind plugin configured in [.postcssrc.json](./.postcssrc.json).                                                |
+| `prettier`                            | `3.6.2`               | Formatting configured in [.prettierrc](./.prettierrc), including Angular HTML parsing.                                      |
+| `@playwright/test`                    | `^1.55.0`             | Browser test infrastructure for Chromium, Firefox, and WebKit, including book details tests with intercepted API responses. |
+| `@types/node`, `@types/express`       | `^20.17.19`, `^5.0.1` | Type definitions for Node tooling and Express-related code.                                                                 |
+
+### Additional declared dependencies
+
+| Dependency                                            | Declared version            | Current integration                                                                                            |
+| ----------------------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `@ngrx/signals`                                       | `20.0.1`                    | No Signal Store is defined or used in the current source.                                                      |
+| `@angular-architects/ngrx-toolkit`                    | `^20.1.0`                   | No toolkit integration is present.                                                                             |
+| `@tanstack/angular-query-experimental`                | `^5.85.5`                   | No query client provider or query hooks are used; HTTP subscriptions are handled directly by the component.    |
+| `@angular/platform-server`, `@angular/ssr`, `express` | `20.2.1`, `20.2.1`, `5.1.0` | No server entry point or SSR build configuration is present. The configured application starts in the browser. |
+
+## Structure and responsibilities
+
+The application uses standalone components and application-level providers, with no application `NgModule`.
+Routed pages own query/route state and compose small presentation components. HTTP, reporting, and theme effects have
+separate owners.
+
+| File or directory                                                                                                                                        | Responsibility                                                                                                                                                        |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [src/main.ts](src/main.ts)                                                                                                                               | Bootstraps the app and reports bootstrap failures through the same deduplication function used at runtime.                                                            |
+| [app.config.ts](src/app/app.config.ts)                                                                                                                   | Routing, API URL, HTTP error infrastructure, animations, zone change detection, and explicit theme/library initializers.                                              |
+| [app.ts](src/app/app.ts), [app.html](src/app/app.html), [app.css](src/app/app.css)                                                                       | Root shell with the theme switch, unexpected-error notice, router outlet, and footer. The component class only injects services.                                      |
+| [app.routes.ts](src/app/app.routes.ts)                                                                                                                   | Routes for collection, details, and `/books/:id/edit`, with the wildcard redirect last.                                                                               |
+| [book-list.component.ts](src/app/books/book-list.component.ts), [HTML](src/app/books/book-list.component.html)                                           | Loads the full catalogue, combines browser-local state and debounced queries, and renders a limited, extendable result set.                                           |
+| [book-details.component.ts](src/app/books/book-details.component.ts), [HTML](src/app/books/book-details.component.html)                                  | Loads a book by route ID, applies local edits, records successful views, and exposes saved/status controls.                                                           |
+| [book-item.component.ts](src/app/books/book-item.component.ts)                                                                                           | Presents a book, links to details/editing, and emits saved/status actions through shared personal controls.                                                           |
+| [book-cover.component.ts](src/app/books/book-cover.component.ts)                                                                                         | Shared card/detail cover rendering, missing/broken-image fallback, and local failure reset when the source changes.                                                   |
+| [book-api-client.service.ts](src/app/books/book-api-client.service.ts), [book-api.config.ts](src/app/books/book-api.config.ts)                           | Read-only HTTP access to the full base catalogue and individual books using an injected API URL and expected-404 context.                                             |
+| [book.ts](src/app/books/book.ts), [request-state.ts](src/app/books/request-state.ts)                                                                     | Shared book model and discriminated loading/ready/error state; details extend the union with not-found.                                                               |
+| [book-library.service.ts](src/app/books/book-library.service.ts), [book-library.ts](src/app/books/book-library.ts)                                       | Explicit startup loading and validation of local saved IDs, reading statuses, recent history, and book edits; command-based persistence with visible failure notices. |
+| [book-collection.ts](src/app/books/book-collection.ts)                                                                                                   | Pure projection: apply local edits, match titles, combine filters/view membership, sort, then limit visible results.                                                  |
+| [book-filters.component.ts](src/app/books/book-filters.component.ts), [HTML](src/app/books/book-filters.component.html)                                  | Controlled sorting/filter UI that emits changes and reports invalid page ranges.                                                                                      |
+| [book-library-controls.component.ts](src/app/books/book-library-controls.component.ts)                                                                   | Reusable save/unsave and reading-status controls for cards and details.                                                                                               |
+| [book-edit.component.ts](src/app/books/book-edit.component.ts), [HTML](src/app/books/book-edit.component.html)                                           | Direct-linkable editor route; loads the original book, supplies local overrides, and saves changes through the library service.                                       |
+| [book-edit-form.component.ts](src/app/books/book-edit-form.component.ts), [HTML](src/app/books/book-edit-form.component.html)                            | Independent form draft with title/page validation, Save output, and Cancel navigation without mutation.                                                               |
+| [theme.service.ts](src/app/shared/theme.service.ts)                                                                                                      | Explicit, idempotent startup initialization; signal-backed theme state; document-root and storage updates on commands.                                                |
+| [http-error.interceptor.ts](src/app/shared/http-error.interceptor.ts)                                                                                    | Reports unexpected HTTP failures and rethrows the original error; suppresses reporting of explicitly expected 404 responses.                                          |
+| [global-error-handler.ts](src/app/shared/global-error-handler.ts), [error-reporter.service.ts](src/app/shared/error-reporter.service.ts)                 | Reports unhandled errors, deduplicates repeated error objects, and exposes a dismissible notice for unexpected runtime failures.                                      |
+| [loading-indicator.component.ts](src/app/shared/loading-indicator.component.ts), [state-message.component.ts](src/app/shared/state-message.component.ts) | Shared request feedback with status/alert semantics, reduced-motion loading, projected headings, and page-owned action content.                                       |
+| [toast.service.ts](src/app/shared/toast.service.ts)                                                                                                      | Existing Material snackbar wrapper, available for explicit notifications; request errors currently use inline page feedback.                                          |
+| [styles.css](src/styles.css), [material-theme.scss](src/material-theme.scss)                                                                             | Tailwind import, semantic light/dark palettes, common interaction styles, native color scheme, and matching snackbar color overrides.                                 |
+| [index.html](src/index.html), [public/](public/)                                                                                                         | Browser HTML shell, fonts/icon stylesheets, and static assets.                                                                                                        |
+
+The root shell and routed book pages use separate HTML files. Small presentation components keep inline templates.
+Templates use `@if`, `@switch`, and `@for` with stable book IDs. The small shared presentation components use
+`OnPush`; pages subscribe to request state once through the async pipe.
+
+## Runtime architecture and data flow
+
+```mermaid
+flowchart TD
+    Config["App providers"] --> Init["Theme and library initializers"]
+    Init --> App["Shell, notices and router outlet"]
+    App --> List["Collection: catalogue load and local query"]
+    App --> Details["Details: route book and personal controls"]
+    App --> Edit["Edit route and independent form draft"]
+    List --> APIClient["BookApiClient: GET only"]
+    Details --> APIClient
+    Edit --> APIClient
+    APIClient --> Interceptor["HTTP error interceptor"]
+    Interceptor --> API["Bookmonkey API: base catalogue"]
+    Interceptor --> Reporter["Deduplicated error reporting"]
+    Library["BookLibraryService"] --> List
+    Library --> Details
+    Edit --> Library
+    Details --> Library
+    Library --> Storage["Browser localStorage"]
+```
+
+### Catalogue, query, and personal views
+
+The API supplies the base catalogue (250 books in the current local dataset). The list loads the complete array through
+`getBooks()`, then combines that request state with the browser library and a typed query. Local metadata edits are
+applied before matching or sorting. This makes edited titles/authors/publishers/page counts consistent across details,
+search, filters, and personal views.
+
+- Search trims whitespace and ignores case. One normalized character matches only the title's beginning; two or more
+  characters match literal text anywhere in the title. Author, subtitle, or description matches alone do not qualify.
+- Nonempty typing waits 300 ms; a new query replaces an obsolete timer. Clear and filter/sort/view changes run immediately.
+  Local queries do not emit HTTP requests. Retrying a catalogue error starts a fresh GET.
+- Author and publisher filters match case-insensitive text. Minimum and maximum pages are inclusive and combine with the
+  title search and reading-status filter. Invalid minimum/maximum order has an explicit inline message.
+- Sorting supports title or author ascending/descending. Default order preserves the API collection order, except in the
+  recent view, where the most recent unique visit comes first.
+- All books, Read later, and Recently viewed select the collection membership. Saved/status changes update these views
+  immediately through library state.
+- Matching and ordering operate on the whole merged collection before the visible-result limit. The default limit is 10;
+  Show more extends it by the page size. Result count describes all matches, not only visible cards.
+- Request state remains a discriminated union: loading, ready with data, or error with a message. Empty results are a
+  successful state. The async pipe owns the list subscription and cancels pending load/timer work on destruction.
+
+The catalogue is reloaded when the collection page is recreated; no query-cache dependency has been added. Loading the
+whole dataset fits the current workshop catalogue. A substantially larger collection would need a backend contract that
+can combine original records and per-user edits before server-side filtering/pagination.
+
+### Browser-local library and editing
+
+The user explicitly chose to store all changes in this browser. `BookLibraryService.initialize()` is called through
+`provideAppInitializer`; constructors only inject dependencies or assemble state. The service reads
+`bookmonkey-library-v1`, validates its shape, and exposes state through a read-only observable.
+
+Stored state contains saved book IDs, reading statuses keyed by ID, unique recent IDs in visit order, and metadata
+overrides keyed by stable ID. Commands update the current state and attempt to persist it. Storage read/parse/write
+failures leave the app usable and display a notice; unsuccessful writes are identified as available for this visit only.
+There is no account, cross-device synchronization, API mutation, or automatic cross-tab state synchronization.
+
+Cards and details share save/unsave and status controls. Status can be unset or one of Want to read, Reading, and Finished.
+Successful detail loads record a visit without duplicating the same ID; revisiting moves it to the front. The API still
+supplies the base records, so browser-local changes do not imply offline catalogue availability.
+
+`/books/:id/edit` loads a book and copies its merged metadata into an independent form draft. Save stores a local
+override and returns to details; Cancel leaves stored data unchanged. Title must be nonblank and page count a positive
+whole number. Editable fields are title, subtitle, author, publisher, ISBN, page count, formatted price, cover URL, and
+description. Book ID and user ID are not edited; changing the displayed ISBN does not change routing identity.
+
+The API URL is injected through `BOOK_API_URL`, defaulting to `http://localhost:4730/books`. Single-book IDs are
+URL-encoded, and trailing slashes are normalized. All catalogue requests are GETs. Direct detail/editor links and refreshes
+load original records and reapply local overrides. Descriptions remain plain text with preserved line breaks.
+
+### Error handling and presentation
+
+The functional HTTP interceptor reports failures and rethrows the original error. Single-book requests mark HTTP 404 as
+expected through context, so details and editors render a local not-found state without a global report. Other HTTP
+failures are reported once and recovered into page-owned error/retry state.
+
+Browser global listeners forward unhandled errors to `GlobalErrorHandler`. The shared reporter deduplicates error objects
+by identity, logs context to the console, and exposes one dismissible shell notice for unexpected runtime failures.
+HTTP errors do not also create that notice or a toast. A shared bootstrap fallback remains available before the UI exists.
+Storage warnings are expected local-state feedback, separate from unexpected runtime reports.
+
+Large pages and forms use external HTML; small presentation components use inline templates. Shared loading/state/cover
+components retain accessible announcements and cover fallbacks. Page templates own heading levels and actions. Stable
+book-ID tracking preserves card identity while local metadata and personal state update.
+
+### Theme and interaction styles
+
+`ThemeService.initialize()` still supplies the saved/system light/dark choice before the shell renders. Only explicit
+toggles persist the choice; blocked storage does not disable switching. The document-root `dark` class and native
+`color-scheme` remain centralized.
+
+Semantic Tailwind utilities map to the shared light/dark CSS palette. `button-primary`, `button-secondary`,
+`form-control`, `text-link`, and `focus-ring` share interaction styling. Pressed personal-view/save controls have a
+visible selected state. Snackbar colors use the same palette; layout stays local to templates.
+
+## Build and configuration
+
+[angular.json](./angular.json) defines a single application named `angular-workshop-modern`. Its build uses `@angular/build:application` with `src/main.ts` as the browser entry, `zone.js` as a polyfill, `public/` as the asset source, and both global style files.
+
+- Production is the default build configuration and enables output hashing. Bundle budgets warn at 500 kB and fail at 1 MB for the initial bundle; component styles warn at 4 kB and fail at 8 kB.
+- The development server defaults to the development configuration, with optimization disabled and source maps enabled.
+- [tsconfig.json](./tsconfig.json) enables TypeScript strictness, strict Angular templates and injection checks, isolated modules, and an ES2022 target with preserved module syntax.
+- [tsconfig.app.json](./tsconfig.app.json) includes application TypeScript and excludes `*.spec.ts`; [tsconfig.spec.json](./tsconfig.spec.json) declares Jasmine test types.
+- Tailwind is imported from the global CSS file and processed through PostCSS. Semantic CSS variables supply the light/dark palettes; the SCSS file aligns Material snackbar colors with those tokens rather than defining a full Material theme.
+
+## Development commands and tests
+
+Run commands from the repository root. The API and frontend require separate processes.
+
+| Command                | Effect                                                                                                                                                          |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm install`          | Installs the frontend dependencies.                                                                                                                             |
+| `npx bookmonkey-api`   | Starts the separately distributed fake-data API at `http://localhost:4730`, as described in [README.md](./README.md). This package is not a project dependency. |
+| `npm start`            | Runs `ng serve`; the local frontend is expected at `http://localhost:4200`.                                                                                     |
+| `npm run build`        | Builds the production application.                                                                                                                              |
+| `npm run watch`        | Rebuilds continuously with the development configuration.                                                                                                       |
+| `npm test`             | Invokes the configured Angular Karma target; see the current testing status below.                                                                              |
+| `npx playwright test`  | Runs the tests selected by [playwright.config.ts](./playwright.config.ts).                                                                                      |
+| `npm run format.write` | Formats supported files under `src/`; the script does not include Markdown files at the repository root.                                                        |
+
+The browser suites share [book-fixtures.ts](tests/book-fixtures.ts), which supplies books, intercepted read-only API/cover
+responses, and captured application error reports. They do not require a running API.
+
+- [book-details.spec.ts](tests/book-details.spec.ts): navigation, fields, direct links/reloads, loading, retries, missing
+  books/covers, and narrow layouts.
+- [book-list.spec.ts](tests/book-list.spec.ts): actual one-letter/longer/literal title matching, author-only exclusion,
+  both sort fields/directions, combined inclusive filters, range validation, debouncing/clear without search HTTP calls,
+  full-catalogue matching before limits, Show more, teardown, and catalogue error recovery.
+- [library.spec.ts](tests/library.spec.ts): saved/status persistence and removal, recent order/deduplication, local edits
+  and unchanged IDs, edited-field matching/filtering, no API writes, browser-context isolation, cancel, validation,
+  editor refresh/not-found, storage failure feedback, and mobile/dark layouts.
+- [error-handling.spec.ts](tests/error-handling.spec.ts): local 404 outcomes, HTTP/network errors and retries, and
+  deduplicated runtime reporting.
+- [theme.spec.ts](tests/theme.spec.ts): keyboard switching, actual color changes, preference precedence, navigation/reload,
+  system defaults, narrow screens, and blocked storage.
+- [example.spec.ts](tests/example.spec.ts) and [tests-examples/](tests-examples/) remain external demonstration scaffolding.
+  Karma still has no source specs or directly declared Karma/Jasmine dependencies.
+
+Playwright starts or reuses the frontend at port 4200. Install the matching browser for the project's Playwright version.
+A portable selected-suite command is:
+
+```sh
+npx playwright test tests/book-details.spec.ts tests/book-list.spec.ts tests/library.spec.ts tests/error-handling.spec.ts tests/theme.spec.ts --project=chromium
+```
+
+The unused NgRx, toolkit, query, and server packages listed above remain declared workshop options. This refactoring uses
+the existing Angular/RxJS stack and retains those packages to preserve the workshop setup; none has been integrated into
+the runtime. [REFACTORING.md](REFACTORING.md) records the original findings and implementation status.

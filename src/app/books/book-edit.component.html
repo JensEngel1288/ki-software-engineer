@@ -1,0 +1,26 @@
+<div class="container mx-auto max-w-3xl px-4 py-12">
+  <a routerLink="/" class="text-link mb-8 inline-block">← Back to books</a>
+  <h1 class="mb-3 text-3xl font-bold text-accent">Edit book</h1>
+  <p class="mb-8 text-secondary">Your changes are saved in this browser and do not change the shared catalogue.</p>
+  @if (state$ | async; as state) {
+    @switch (state.status) {
+      @case ('loading') {
+        <app-loading-indicator message="Loading book..."></app-loading-indicator>
+      }
+      @case ('error') {
+        <app-state-message role="alert" [message]="state.message">
+          <h2 state-title class="state-title">Unable to load book</h2>
+          <button type="button" (click)="retry()" class="button-primary mt-6">Try again</button>
+        </app-state-message>
+      }
+      @case ('not-found') {
+        <app-state-message message="This book is unavailable or the link is incorrect.">
+          <h2 state-title class="state-title">Book not found</h2>
+        </app-state-message>
+      }
+      @case ('ready') {
+        <app-book-edit-form [book]="state.data" (save)="save(state.data.id, $event)"></app-book-edit-form>
+      }
+    }
+  }
+</div>

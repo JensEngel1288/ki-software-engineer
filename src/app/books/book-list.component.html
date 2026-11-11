@@ -1,0 +1,83 @@
+<div class="container mx-auto max-w-7xl px-4 py-12">
+  <div class="mb-6 border-b border-divider pb-4">
+    <h1 class="text-3xl font-bold text-accent">Book Collection</h1>
+    <p class="mt-2 text-sm text-secondary">Your saved books, reading status, and edits stay in this browser.</p>
+  </div>
+  <div class="mb-6 flex flex-wrap gap-2" role="group" aria-label="Collection views">
+    <button type="button" class="button-secondary" [attr.aria-pressed]="query.view === 'all'" (click)="setView('all')">
+      All books
+    </button>
+    <button
+      type="button"
+      class="button-secondary"
+      [attr.aria-pressed]="query.view === 'saved'"
+      (click)="setView('saved')"
+    >
+      Read later
+    </button>
+    <button
+      type="button"
+      class="button-secondary"
+      [attr.aria-pressed]="query.view === 'recent'"
+      (click)="setView('recent')"
+    >
+      Recently viewed
+    </button>
+  </div>
+  <div class="mb-6 flex items-center border-b-2 border-control py-2">
+    <label for="book-search" class="sr-only">Search books</label>
+    <input
+      id="book-search"
+      type="text"
+      [ngModel]="searchTerm"
+      (ngModelChange)="onSearchChange($event)"
+      placeholder="Search for books..."
+      class="focus-ring mr-3 w-full min-w-0 rounded-sm border-none bg-transparent px-2 py-1 placeholder:text-muted"
+    />
+    @if (searchTerm) {
+      <button type="button" aria-label="Clear search" (click)="clearSearch()" class="button-secondary">Clear</button>
+    }
+  </div>
+  <app-book-filters [filters]="query" (filtersChange)="onFiltersChange($event)"></app-book-filters>
+  @if (state$ | async; as state) {
+    @switch (state.status) {
+      @case ('loading') {
+        <app-loading-indicator message="Loading books..."></app-loading-indicator>
+      }
+      @case ('error') {
+        <app-state-message role="alert" [message]="state.message">
+          <h2 state-title class="state-title">Unable to load books</h2>
+          <button type="button" (click)="retry()" class="button-primary mt-6">Try again</button>
+        </app-state-message>
+      }
+      @case ('ready') {
+        <p class="mb-5 text-sm text-secondary" aria-live="polite">
+          {{ state.data.total }} matching books · {{ state.data.books.length }} shown
+        </p>
+        <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          @for (book of state.data.books; track book.id) {
+            <app-book-item
+              [book]="book"
+              [saved]="state.data.library.savedIds.includes(book.id)"
+              [readingStatus]="state.data.library.readingStatuses[book.id] || ''"
+              (savedToggle)="library.toggleSaved(book.id)"
+              (readingStatusChange)="library.setReadingStatus(book.id, $event)"
+            ></app-book-item>
+          } @empty {
+            <app-state-message
+              class="col-span-full"
+              message="Try another view, change your search, or reset the filters."
+            >
+              <h2 state-title class="state-title">{{ emptyTitle }}</h2>
+            </app-state-message>
+          }
+        </div>
+        @if (state.data.hasMore) {
+          <div class="mt-8 text-center">
+            <button type="button" class="button-primary" (click)="showMore()">Show more books</button>
+          </div>
+        }
+      }
+    }
+  }
+</div>

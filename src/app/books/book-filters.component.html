@@ -1,0 +1,75 @@
+<div class="mb-6 rounded-xl border border-divider bg-surface p-4">
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <label class="grid gap-1 text-sm font-medium"
+      >Sort books
+      <select [ngModel]="filters.sort" (ngModelChange)="update({ sort: $event })" class="form-control">
+        <option value="default">Default order</option>
+        <option value="title-asc">Title: A–Z</option>
+        <option value="title-desc">Title: Z–A</option>
+        <option value="author-asc">Author: A–Z</option>
+        <option value="author-desc">Author: Z–A</option>
+      </select>
+    </label>
+    <label class="grid gap-1 text-sm font-medium"
+      >Filter by author
+      <input
+        type="text"
+        [ngModel]="filters.author"
+        (ngModelChange)="update({ author: $event })"
+        class="form-control"
+        placeholder="Any author"
+      />
+    </label>
+    <label class="grid gap-1 text-sm font-medium"
+      >Filter by publisher
+      <input
+        type="text"
+        [ngModel]="filters.publisher"
+        (ngModelChange)="update({ publisher: $event })"
+        class="form-control"
+        placeholder="Any publisher"
+      />
+    </label>
+    <label class="grid gap-1 text-sm font-medium"
+      >Minimum pages
+      <input
+        type="number"
+        min="0"
+        step="1"
+        [ngModel]="filters.minPages"
+        (ngModelChange)="update({ minPages: $event })"
+        class="form-control"
+        placeholder="No minimum"
+      />
+    </label>
+    <label class="grid gap-1 text-sm font-medium"
+      >Maximum pages
+      <input
+        type="number"
+        min="0"
+        step="1"
+        [ngModel]="filters.maxPages"
+        (ngModelChange)="update({ maxPages: $event })"
+        class="form-control"
+        placeholder="No maximum"
+      />
+    </label>
+    <label class="grid gap-1 text-sm font-medium"
+      >Filter by reading status
+      <select
+        [ngModel]="filters.readingStatus"
+        (ngModelChange)="update({ readingStatus: $event })"
+        class="form-control"
+      >
+        <option value="">Any status</option>
+        <option value="want-to-read">Want to read</option>
+        <option value="reading">Reading</option>
+        <option value="finished">Finished</option>
+      </select>
+    </label>
+  </div>
+  @if (invalidRange) {
+    <p role="alert" class="mt-3 text-sm text-accent">Minimum pages must not exceed maximum pages.</p>
+  }
+  <button type="button" (click)="clear()" class="text-link mt-4 text-sm font-medium">Reset filters</button>
+</div>

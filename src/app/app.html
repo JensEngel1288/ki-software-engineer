@@ -1,15 +1,46 @@
-<header class="bg-white shadow">
-  <div class="container mx-auto px-4 py-6">
-    <h1 class="text-3xl font-bold text-blue-600">BookMonkey</h1>
+<header class="bg-surface shadow">
+  <div class="container mx-auto flex flex-wrap items-center justify-between gap-4 px-4 py-6">
+    <h1 class="text-3xl font-bold text-accent">BookMonkey</h1>
+    <button
+      type="button"
+      role="switch"
+      aria-label="Dark mode"
+      [attr.aria-checked]="theme.isDark()"
+      [attr.title]="theme.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+      (click)="theme.toggle()"
+      class="focus-ring ml-auto inline-flex items-center gap-3 rounded-full border border-divider bg-muted-surface px-3 py-2 hover:bg-divider"
+    >
+      <span class="min-w-9 text-sm font-medium">{{ theme.isDark() ? 'Dark' : 'Light' }}</span>
+      <span aria-hidden="true" class="h-6 w-11 shrink-0 rounded-full bg-control p-1 dark:bg-action">
+        <span
+          class="block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 motion-reduce:transition-none"
+          [class.translate-x-5]="theme.isDark()"
+        ></span>
+      </span>
+    </button>
   </div>
 </header>
 
+@if (errors.notice(); as notice) {
+  <div class="container mx-auto mt-6 max-w-5xl px-4">
+    <app-state-message role="alert" [message]="notice">
+      <h2 state-title class="state-title">Something went wrong</h2>
+      <button type="button" class="button-primary mt-6" (click)="errors.dismissNotice()">Dismiss</button>
+    </app-state-message>
+  </div>
+}
+
 <main>
+  @if (library.storageWarning(); as warning) {
+    <p role="alert" class="container mx-auto my-4 max-w-5xl rounded-lg border border-divider bg-muted-surface p-4">
+      {{ warning }}
+    </p>
+  }
   <router-outlet></router-outlet>
 </main>
 
-<footer class="bg-gray-100 mt-12">
+<footer class="mt-12 bg-muted-surface">
   <div class="container mx-auto px-4 py-6">
-    <p class="text-center text-gray-600 text-sm">© 2023 BookMonkey App - Angular Workshop by workshops.de</p>
+    <p class="text-center text-sm text-secondary">© 2023 BookMonkey App - Angular Workshop by workshops.de</p>
   </div>
 </footer>

@@ -1,0 +1,77 @@
+<div class="container mx-auto max-w-5xl px-4 py-12">
+  <a routerLink="/" class="text-link mb-8 inline-flex items-center gap-2 font-medium">
+    <span aria-hidden="true">&larr;</span>
+    Back to books
+  </a>
+
+  @if (state$ | async; as state) {
+    @switch (state.status) {
+      @case ('loading') {
+        <app-loading-indicator message="Loading book..."></app-loading-indicator>
+      }
+      @case ('not-found') {
+        <app-state-message message="This book is unavailable or the link is incorrect.">
+          <h1 state-title class="state-title">Book not found</h1>
+        </app-state-message>
+      }
+      @case ('error') {
+        <app-state-message role="alert" [message]="state.message">
+          <h1 state-title class="state-title">Unable to load book</h1>
+          <button type="button" (click)="retry()" class="button-primary mt-6">Try again</button>
+        </app-state-message>
+      }
+      @case ('ready') {
+        <article class="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:gap-12">
+          <app-book-cover
+            [src]="state.data.cover"
+            [alt]="state.data.title"
+            class="mx-auto w-full max-w-xs self-start rounded-lg shadow-md"
+          ></app-book-cover>
+          <div class="min-w-0 break-words">
+            <h1 class="mb-3 text-3xl font-bold text-accent">{{ state.data.title }}</h1>
+            @if (state.data.subtitle) {
+              <p class="mb-4 text-xl text-secondary">{{ state.data.subtitle }}</p>
+            }
+            <p class="mb-8 text-lg text-secondary">by {{ state.data.author }}</p>
+            <div class="mb-8 space-y-4">
+              <app-book-library-controls
+                [title]="state.data.title"
+                [saved]="library.snapshot.savedIds.includes(state.data.id)"
+                [status]="library.snapshot.readingStatuses[state.data.id] || ''"
+                (savedToggle)="library.toggleSaved(state.data.id)"
+                (statusChange)="library.setReadingStatus(state.data.id, $event)"
+              ></app-book-library-controls>
+              <a [routerLink]="['/books', state.data.id, 'edit']" class="text-link inline-block font-medium"
+                >Edit book</a
+              >
+            </div>
+
+            <dl class="grid grid-cols-1 gap-6 border-y border-divider py-6 sm:grid-cols-2">
+              <div>
+                <dt class="text-sm font-medium text-muted">ISBN</dt>
+                <dd class="mt-1">{{ state.data.isbn }}</dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-muted">Publisher</dt>
+                <dd class="mt-1">{{ state.data.publisher }}</dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-muted">Pages</dt>
+                <dd class="mt-1">{{ state.data.numPages }}</dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-muted">Price</dt>
+                <dd class="mt-1">{{ state.data.price }}</dd>
+              </div>
+            </dl>
+
+            <h2 class="mb-3 mt-8 text-xl font-semibold">About this book</h2>
+            <p class="whitespace-pre-line leading-relaxed text-secondary">
+              {{ state.data.abstract || 'No description available.' }}
+            </p>
+          </div>
+        </article>
+      }
+    }
+  }
+</div>

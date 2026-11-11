@@ -1,42 +1,53 @@
-import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Book } from './book';
+import { BookCoverComponent } from './book-cover.component';
+import { ReadingStatus } from './book-library';
+import { BookLibraryControlsComponent } from './book-library-controls.component';
 
 @Component({
   selector: 'app-book-item',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [RouterLink, BookCoverComponent, BookLibraryControlsComponent],
   template: `
-    <div
-      class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full"
-    >
-      <div class="relative aspect-[3/4] overflow-hidden">
-        <img
-          *ngIf="book.cover"
-          [src]="book.cover"
-          [alt]="book.title"
-          class="w-full h-full object-contain bg-gray-100"
-        />
-        <div *ngIf="!book.cover" class="w-full h-full bg-gray-100 flex items-center justify-center">
-          <span class="text-gray-500 text-sm font-medium">No cover available</span>
+    <div class="flex h-full flex-col overflow-hidden rounded-lg bg-surface shadow-md ring-1 ring-divider">
+      <app-book-cover [src]="book.cover" [alt]="book.title"></app-book-cover>
+      <div class="flex flex-grow flex-col gap-3 p-5">
+        <div>
+          <h2 class="mb-1 line-clamp-2 text-lg font-semibold">
+            <a [routerLink]="['/books', book.id]" class="text-link">{{ book.title }}</a>
+          </h2>
+          @if (book.subtitle) {
+            <p class="line-clamp-2 text-sm text-secondary">{{ book.subtitle }}</p>
+          }
+          <p class="mt-2 text-sm text-accent">{{ book.author }}</p>
+          @if (book.isbn) {
+            <p class="mt-2 text-xs text-muted">ISBN: {{ book.isbn }}</p>
+          }
         </div>
-      </div>
-      <div class="p-5 flex flex-col flex-grow">
-        <h2 class="text-lg font-semibold text-gray-800 mb-1 line-clamp-2">{{ book.title }}</h2>
-        <p *ngIf="book.subtitle" class="text-sm text-gray-600 mb-2 line-clamp-2">{{ book.subtitle }}</p>
-        <div class="text-sm text-gray-700 mt-auto">
-          <p>
-            <span class="text-blue-700">{{ book.author }}</span>
-          </p>
-          <p *ngIf="book.isbn" class="text-xs text-gray-500 mt-2">ISBN: {{ book.isbn }}</p>
+        <div class="mt-auto border-t border-divider pt-3">
+          <app-book-library-controls
+            [title]="book.title"
+            [saved]="saved"
+            [status]="readingStatus"
+            (savedToggle)="savedToggle.emit()"
+            (statusChange)="readingStatusChange.emit($event)"
+          ></app-book-library-controls>
+          <a
+            [routerLink]="['/books', book.id, 'edit']"
+            [attr.aria-label]="'Edit ' + book.title"
+            class="text-link mt-3 inline-block text-sm"
+            >Edit book</a
+          >
         </div>
       </div>
     </div>
   `
 })
 export class BookItemComponent {
-  @Input() book!: Book;
-
-  // No longer needed as we have a single author field
+  @Input({ required: true }) book!: Book;
+  @Input() saved = false;
+  @Input() readingStatus: ReadingStatus | '' = '';
+  @Output() savedToggle = new EventEmitter<void>();
+  @Output() readingStatusChange = new EventEmitter<ReadingStatus | ''>();
 }
