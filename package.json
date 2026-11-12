@@ -6,6 +6,9 @@
     "start": "ng serve",
     "build": "ng build",
     "build.angular-mcp": "tsc --project tools/angular-mcp/tsconfig.json",
+    "eval.gpt": "node tools/eval.mjs",
+    "eval.opus": "npm run eval.gpt --",
+    "report": "node tools/report.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "format.write": "prettier --write \"src/**/*.{ts,html,md,css,json}\""

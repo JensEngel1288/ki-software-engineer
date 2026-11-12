@@ -258,6 +258,26 @@ build command or application source.
 
 Run commands from the repository root. The API and frontend require separate processes.
 
+`npm run eval.gpt` starts the separate code-generation playground through
+[tools/eval.mjs](tools/eval.mjs). The launcher uses the playground's working directory, selects `gpt-5.1-no-thinking`
+for the goal-tracker prompt, forwards extra arguments, and normalizes absolute Windows ES module imports
+for scorer 0.0.69. The playground installs Angular template dependencies during evaluation. Live runs require
+`OPENAI_API_KEY` for generation and `GEMINI_API_KEY` for the existing default ratings/summary. The scorer maps the GPT
+alias to `gpt-5.1` with reasoning effort `none`. `npm run eval.opus` remains a compatibility alias, and both root and
+playground entrypoints use the same launcher. Historical reports retain their original model selection. Evaluation is separate
+from the BookMonkey build and regression suites; no live evaluation result is implied by a launcher check.
+
+On Windows, the evaluation launcher redirects only scorer's filesystem helper import to
+[scorer-windows-fs.mjs](tools/scorer-windows-fs.mjs). It links dependency directories using junctions while preserving
+other filesystem operations. This avoids workspace setup failures caused by ordinary directory symlink permissions.
+Focused [filesystem tests](tools/scorer-windows-fs.test.mjs) verify dependency access and preservation of source files.
+An evaluation with no results and zero maximum points has no defined score percentage; its completion metadata records
+the failed prompts. Existing failed reports are retained, and real scores require another completed evaluation.
+
+`npm run report` uses [tools/report.mjs](tools/report.mjs) to launch the playground's report command, retaining its
+working directory so the viewer finds the saved `.web-codegen-scorer/reports` files. The viewer defaults to port 4201,
+separate from BookMonkey's port 4200. An explicit override such as `npm run report -- --port=4300` is forwarded once.
+
 The custom [Angular component MCP server](tools/angular-mcp/index.ts) is separate from the Angular CLI's built-in MCP
 server configured in `.cursor/mcp.json`. Build it with `npm run build.angular-mcp` and start it with
 `node dist/angular-mcp/index.js`. Its `generate_component` tool invokes the installed CLI with separate arguments,
