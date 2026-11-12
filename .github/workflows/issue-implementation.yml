@@ -1,67 +1,193 @@
-name: Issue Implementation Preparation
+name: Issue Implementation with OpenAI
 
 on:
   issues:
-     types: [labeled]
+    types: [labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: implement-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+env:
+  CI: true
 
 jobs:
-  prepare-implementation:
-    if: github.event.label.name == 'ready-for-implementation'
+  implement:
+    if: >-
+      github.event.label.name == 'ready-for-implementation' &&
+      github.event.sender.type != 'Bot'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
-      contents: write
-      issues: write
-      pull-requests: write
-
+      contents: read
+      issues: read
+    outputs:
+      report: ${{ steps.implementation.outputs.final-message }}
+      has-changes: ${{ steps.patch.outputs.has-changes }}
+      base-sha: ${{ steps.base.outputs.sha }}
+    env:
+      ISSUE_CONTEXT_FILE: ${{ runner.temp }}/issue-context.json
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout default branch
+        uses: actions/checkout@v6
         with:
+          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Configure Codex
+      - name: Record implementation base
+        id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Read issue requirements
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('node:fs');
+            const { data: issue } = await github.rest.issues.get({
+              ...context.repo, issue_number: context.issue.number
+            });
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo, issue_number: context.issue.number, per_page: 100
+            });
+            fs.writeFileSync(process.env.ISSUE_CONTEXT_FILE, JSON.stringify({ issue, comments }, null, 2));
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Check OpenAI API key
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          mkdir -p "$RUNNER_TEMP/codex-home"
-      
-          cat > "$RUNNER_TEMP/codex-home/config.toml" <<'EOF'
-          default_permissions = "github-issues"
-      
-          [features]
-          network_proxy = true
-      
-          [permissions.github-issues]
-          extends = ":workspace"
-      
-          [permissions.github-issues.network]
-          enabled = true
-      
-          [permissions.github-issues.network.domains]
-          "api.github.com" = "allow"
-          "github.com" = "allow"
+          if [[ -z "$OPENAI_API_KEY" ]]; then
+            echo "::error::Configure the OPENAI_API_KEY repository secret."
+            exit 1
+          fi
 
-          [permissions.github-issues.filesystem]
-          ":workspace_roots" = { ".git" = "write" }
-          EOF
-
-      - name: Analyze Issue with Codex
+      - name: Implement issue with OpenAI Codex
+        id: implementation
         uses: openai/codex-action@v1
         env:
-          GH_TOKEN: ${{ github.token }}
+          ISSUE_CONTEXT_FILE: ${{ runner.temp }}/issue-context.json
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          codex-home: ${{ runner.temp }}/codex-home
-          permission-profile: github-issues
+          permission-profile: ':workspace'
           safety-strategy: drop-sudo
-          model: "gpt-5.6-luna"
-          prompt: |
-            /ci-se-green
-                                 
-            ISSUE_NUMBER=${{ github.event.issue.number }}
-            ISSUE_TITLE="${{ github.event.issue.title }}"
-            
-            # Convert to lowercase and replace spaces with hyphens, format: feature/{number}-{title}
-            BRANCH_NAME=$(echo "feature/${ISSUE_NUMBER}-${ISSUE_TITLE}" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g' | sed 's/[^a-z0-9\-\/]//g')
-            
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
+          model: gpt-5.6-luna
+          prompt-file: .github/prompts/implement-issue.md
+
+      - name: Verify dependency lockfile
+        run: npm ci
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Verify application browser tests
+        run: >-
+          npx playwright test tests/book-details.spec.ts tests/book-list.spec.ts
+          tests/library.spec.ts tests/error-handling.spec.ts tests/theme.spec.ts
+          tests/universe.spec.ts --project=chromium
+
+      - name: Package verified changes
+        id: patch
+        env:
+          EXPECTED_SHA: ${{ steps.base.outputs.sha }}
+        run: |
+          if [[ "$(git rev-parse HEAD)" != "$EXPECTED_SHA" ]]; then
+            echo "::error::The agent changed Git history instead of leaving a working-tree patch."
+            exit 1
+          fi
+          git add --intent-to-add -- .
+          if [[ -n "$(git diff HEAD --name-only -- .github .cursor .codex .agents AGENTS.md ':(glob)**/AGENTS.md')" ]]; then
+            echo "::error::Automated changes to workflow/agent configuration are not permitted."
+            exit 1
+          fi
+          git diff HEAD --binary > "$RUNNER_TEMP/changes.patch"
+          if [[ -s "$RUNNER_TEMP/changes.patch" ]]; then
+            echo "has-changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload verified patch
+        if: steps.patch.outputs.has-changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-patch
+          path: ${{ runner.temp }}/changes.patch
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-change:
+    needs: implement
+    if: needs.implement.outputs.has-changes == 'true'
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    uses: ./.github/workflows/publish-changes.yml
+    with:
+      artifact-name: verified-patch
+      source-sha: ${{ needs.implement.outputs.base-sha }}
+      base-branch: ${{ github.event.repository.default_branch }}
+      change-branch: feature/issue-${{ github.event.issue.number }}-${{ github.run_id }}
+      title: 'feat: implement issue #${{ github.event.issue.number }}'
+      body: |
+        Implements #${{ github.event.issue.number }}.
+
+        OpenAI Codex prepared this change. The production build and application
+        Chromium suites passed before publication. Review the draft before merging.
+
+        ${{ needs.implement.outputs.report }}
+
+  report-implementation:
+    needs: [implement, publish-change]
+    if: >-
+      always() && needs.implement.result == 'success' &&
+      needs.implement.outputs.report != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Record implementation outcome
+        uses: actions/github-script@v8
+        env:
+          COMMENT_MARKER: '<!-- openai-issue-implementation -->'
+          REPORT: |
+            ${{ needs.implement.outputs.report }}
+
+            Draft PR: ${{ needs.publish-change.outputs.pr-url || 'Not published. Check the workflow run for gaps or publication errors.' }}
+        with:
+          script: |
+            const marker = process.env.COMMENT_MARKER;
+            const report = process.env.REPORT?.trim();
+            if (!report) throw new Error('OpenAI returned no report.');
+            const body = (marker + '\n\n' + report).slice(0, 60000);
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo, issue_number: context.issue.number, per_page: 100
+            });
+            const existing = comments.find(comment =>
+              comment.user?.login === 'github-actions[bot]' && comment.body?.startsWith(marker)
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                ...context.repo, comment_id: existing.id, body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo, issue_number: context.issue.number, body
+              });
+            }

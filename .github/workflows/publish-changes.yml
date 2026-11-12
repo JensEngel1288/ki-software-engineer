@@ -1,0 +1,122 @@
+name: Publish Verified OpenAI Changes
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        type: string
+        required: true
+      source-sha:
+        type: string
+        required: true
+      base-branch:
+        type: string
+        required: true
+      change-branch:
+        type: string
+        required: true
+      title:
+        type: string
+        required: true
+      body:
+        type: string
+        required: true
+    outputs:
+      pr-url:
+        description: URL of the draft pull request
+        value: ${{ jobs.publish.outputs.pr-url }}
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    outputs:
+      pr-url: ${{ steps.existing.outputs.pr-url || steps.publish.outputs.pr-url }}
+    steps:
+      - name: Check for an existing draft
+        id: existing
+        uses: actions/github-script@v8
+        env:
+          BASE_BRANCH: ${{ inputs.base-branch }}
+          CHANGE_BRANCH: ${{ inputs.change-branch }}
+        with:
+          script: |
+            const { data: pulls } = await github.rest.pulls.list({
+              ...context.repo, state: 'open', base: process.env.BASE_BRANCH,
+              head: context.repo.owner + ':' + process.env.CHANGE_BRANCH, per_page: 1
+            });
+            if (pulls.length) core.setOutput('pr-url', pulls[0].html_url);
+
+      - name: Checkout current base branch
+        if: steps.existing.outputs.pr-url == ''
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.base-branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Download verified patch
+        if: steps.existing.outputs.pr-url == ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ runner.temp }}/verified-patch
+
+      - name: Publish draft pull request
+        id: publish
+        if: steps.existing.outputs.pr-url == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ inputs.source-sha }}
+          BASE_BRANCH: ${{ inputs.base-branch }}
+          CHANGE_BRANCH: ${{ inputs.change-branch }}
+          PR_TITLE: ${{ inputs.title }}
+          PR_BODY: ${{ inputs.body }}
+          PATCH_FILE: ${{ runner.temp }}/verified-patch/changes.patch
+        run: |
+          if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Invalid source commit."
+            exit 1
+          fi
+          if [[ ! "$CHANGE_BRANCH" =~ ^feature/issue-[0-9]+-[0-9]+$ && ! "$CHANGE_BRANCH" =~ ^auto-fix/ci-[0-9]+-[0-9]+$ ]]; then
+            echo "::error::Invalid automated branch name."
+            exit 1
+          fi
+          git check-ref-format --branch "$CHANGE_BRANCH"
+          if [[ "$(git rev-parse HEAD)" != "$EXPECTED_SHA" ]]; then
+            echo "::error::The base branch changed after verification. Rerun the implementation/fix workflow."
+            exit 1
+          fi
+          gh auth setup-git
+          if git ls-remote --exit-code --heads origin "refs/heads/$CHANGE_BRANCH" >/dev/null; then
+            echo "::error::The branch already exists without an open PR. It will not be overwritten."
+            exit 1
+          fi
+          git checkout -b "$CHANGE_BRANCH"
+          git apply --check "$PATCH_FILE"
+          git apply "$PATCH_FILE"
+          git add --intent-to-add -- .
+          if [[ -n "$(git diff HEAD --name-only -- .github .cursor .codex .agents AGENTS.md ':(glob)**/AGENTS.md')" ]]; then
+            echo "::error::The patch changes protected workflow/agent configuration."
+            exit 1
+          fi
+          git add --all
+          if git diff --cached --quiet; then
+            echo "::error::The verified patch contains no changes."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "$PR_TITLE"
+          git push origin "$CHANGE_BRANCH"
+          printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
+          url=$(gh pr create --repo "$GITHUB_REPOSITORY" --draft --base "$BASE_BRANCH" --head "$CHANGE_BRANCH" --title "$PR_TITLE" --body-file "$RUNNER_TEMP/pr-body.md")
+          echo "pr-url=$url" >> "$GITHUB_OUTPUT"
+          echo "Draft PR: $url" >> "$GITHUB_STEP_SUMMARY"

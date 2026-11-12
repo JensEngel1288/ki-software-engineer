@@ -1,70 +1,116 @@
-name: Code Review
+name: Code Review with OpenAI
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened, ready_for_review]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: code-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   code-review:
+    if: >-
+      !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.sender.type != 'Bot'
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: read
-      issues: read
-      id-token: write
-
+    outputs:
+      report: ${{ steps.review.outputs.final-message }}
+    env:
+      PR_CONTEXT_FILE: ${{ runner.temp }}/pr-context.json
+      PR_DIFF_FILE: ${{ runner.temp }}/pr.diff
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout pull request head
+        uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Configure Codex
-        run: |
-          mkdir -p "$RUNNER_TEMP/codex-home"
-      
-          cat > "$RUNNER_TEMP/codex-home/config.toml" <<'EOF'
-          default_permissions = "github-issues"
-      
-          [features]
-          network_proxy = true
-      
-          [permissions.github-issues]
-          extends = ":workspace"
-      
-          [permissions.github-issues.network]
-          enabled = true
-      
-          [permissions.github-issues.network.domains]
-          "api.github.com" = "allow"
-          "github.com" = "allow"
+      - name: Read pull request and diff
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('node:fs');
+            const number = context.payload.pull_request.number;
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo, pull_number: number
+            });
+            if (pr.head.sha !== context.payload.pull_request.head.sha) {
+              throw new Error('The pull request changed; use its newer workflow run.');
+            }
+            const { data: diff } = await github.rest.pulls.get({
+              ...context.repo, pull_number: number, mediaType: { format: 'diff' }
+            });
+            fs.writeFileSync(process.env.PR_CONTEXT_FILE, JSON.stringify(pr, null, 2));
+            fs.writeFileSync(process.env.PR_DIFF_FILE, diff);
 
-          [permissions.github-issues.filesystem]
-          ":workspace_roots" = { ".git" = "write" }
-          EOF
-
-      - name: Code Review
-        uses: openai/codex-action@v1
+      - name: Check OpenAI API key
         env:
-          GH_TOKEN: ${{ github.token }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [[ -z "$OPENAI_API_KEY" ]]; then
+            echo "::error::Configure the OPENAI_API_KEY repository secret."
+            exit 1
+          fi
+
+      - name: Review code with OpenAI Codex
+        id: review
+        uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          codex-home: ${{ runner.temp }}/codex-home
-          permission-profile: github-issues
+          permission-profile: ':read-only'
           safety-strategy: drop-sudo
-          model: "gpt-5.6-luna"
-          prompt: |
-            REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
+          model: gpt-5.6-luna
+          prompt-file: .github/prompts/code-review.md
 
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
+  publish-review:
+    needs: code-review
+    if: needs.code-review.outputs.report != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Publish OpenAI code review
+        uses: actions/github-script@v8
+        env:
+          COMMENT_MARKER: '<!-- openai-code-review -->'
+          REPORT: ${{ needs.code-review.outputs.report }}
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo, pull_number: context.payload.pull_request.number
+            });
+            if (pr.head.sha !== context.payload.pull_request.head.sha) {
+              core.info('Skipping a review of an outdated head commit.');
+              return;
+            }
 
-            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
-
-            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+            const marker = process.env.COMMENT_MARKER;
+            const report = process.env.REPORT?.trim();
+            if (!report) throw new Error('OpenAI returned no report.');
+            const body = (marker + '\n\n' + report).slice(0, 60000);
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo, issue_number: context.issue.number, per_page: 100
+            });
+            const existing = comments.find(comment =>
+              comment.user?.login === 'github-actions[bot]' && comment.body?.startsWith(marker)
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                ...context.repo, comment_id: existing.id, body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo, issue_number: context.issue.number, body
+              });
+            }

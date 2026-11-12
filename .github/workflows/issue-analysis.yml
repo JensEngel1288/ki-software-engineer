@@ -1,4 +1,4 @@
-name: Issue Analysis with Claude
+name: Issue Analysis with OpenAI
 
 on:
   issues:
@@ -6,50 +6,96 @@ on:
   issue_comment:
     types: [created]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: issue-analysis-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
 jobs:
   analyze-issue:
+    if: >-
+      !github.event.issue.pull_request &&
+      github.event.sender.type != 'Bot'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
-      issues: write
-
+      issues: read
+    outputs:
+      report: ${{ steps.analysis.outputs.final-message }}
+    env:
+      ISSUE_CONTEXT_FILE: ${{ runner.temp }}/issue-context.json
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
-      - name: Configure Codex
-        run: |
-          mkdir -p "$RUNNER_TEMP/codex-home"
-      
-          cat > "$RUNNER_TEMP/codex-home/config.toml" <<'EOF'
-          default_permissions = "github-issues"
-      
-          [features]
-          network_proxy = true
-      
-          [permissions.github-issues]
-          extends = ":workspace"
-      
-          [permissions.github-issues.network]
-          enabled = true
-      
-          [permissions.github-issues.network.domains]
-          "api.github.com" = "allow"
-          EOF
+      - name: Read issue and comments
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('node:fs');
+            const { data: issue } = await github.rest.issues.get({
+              ...context.repo, issue_number: context.issue.number
+            });
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo, issue_number: context.issue.number, per_page: 100
+            });
+            fs.writeFileSync(process.env.ISSUE_CONTEXT_FILE, JSON.stringify({ issue, comments }, null, 2));
 
-      - name: Analyze Issue with Codex
-        uses: openai/codex-action@v1
+      - name: Check OpenAI API key
         env:
-          GH_TOKEN: ${{ github.token }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [[ -z "$OPENAI_API_KEY" ]]; then
+            echo "::error::Configure the OPENAI_API_KEY repository secret."
+            exit 1
+          fi
+
+      - name: Analyze issue with OpenAI Codex
+        id: analysis
+        uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          codex-home: ${{ runner.temp }}/codex-home
-          permission-profile: github-issues
+          permission-profile: ':read-only'
           safety-strategy: drop-sudo
-          model: "gpt-5.6-luna"
-          prompt: |
-            /ci-re-review
-                          
-            REPOSITORY: ${{ github.repository }}
-            ISSUE_NUMBER: ${{ github.event.issue.number || github.event.comment.issue_url }}
+          model: gpt-5.6-luna
+          prompt-file: .github/prompts/issue-analysis.md
+
+  publish-analysis:
+    needs: analyze-issue
+    if: needs.analyze-issue.outputs.report != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Publish OpenAI analysis
+        uses: actions/github-script@v8
+        env:
+          COMMENT_MARKER: '<!-- openai-issue-analysis -->'
+          REPORT: ${{ needs.analyze-issue.outputs.report }}
+        with:
+          script: |
+            const marker = process.env.COMMENT_MARKER;
+            const report = process.env.REPORT?.trim();
+            if (!report) throw new Error('OpenAI returned no report.');
+            const body = (marker + '\n\n' + report).slice(0, 60000);
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo, issue_number: context.issue.number, per_page: 100
+            });
+            const existing = comments.find(comment =>
+              comment.user?.login === 'github-actions[bot]' && comment.body?.startsWith(marker)
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                ...context.repo, comment_id: existing.id, body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo, issue_number: context.issue.number, body
+              });
+            }
