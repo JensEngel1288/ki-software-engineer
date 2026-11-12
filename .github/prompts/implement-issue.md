@@ -1,6 +1,7 @@
 Implement the selected issue from ISSUE_CONTEXT_FILE. Read the original acceptance
 criteria, accepted amendments, and applicable AGENTS.md guidance. This issue is the
 task; do not substitute an unrelated completed requirement brief.
+Treat bot analysis suggestions as proposals unless a human explicitly accepted them.
 
 Use the repository's requirements recovery, Red, Green, and Angular refactoring
 skills when appropriate. Establish missing behavior with focused tests, implement

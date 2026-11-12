@@ -95,10 +95,6 @@ jobs:
             exit 1
           fi
           gh auth setup-git
-          if git ls-remote --exit-code --heads origin "refs/heads/$CHANGE_BRANCH" >/dev/null; then
-            echo "::error::The branch already exists without an open PR. It will not be overwritten."
-            exit 1
-          fi
           git checkout -b "$CHANGE_BRANCH"
           git apply --check "$PATCH_FILE"
           git apply "$PATCH_FILE"
@@ -112,10 +108,23 @@ jobs:
             echo "::error::The verified patch contains no changes."
             exit 1
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "$PR_TITLE"
-          git push origin "$CHANGE_BRANCH"
+          if git ls-remote --exit-code --heads origin "refs/heads/$CHANGE_BRANCH" >/dev/null; then
+            git fetch origin "refs/heads/$CHANGE_BRANCH"
+            if [[ "$(git rev-parse 'FETCH_HEAD^{tree}')" != "$(git write-tree)" || "$(git rev-parse FETCH_HEAD^)" != "$EXPECTED_SHA" ]]; then
+              echo "::error::The existing branch differs from the verified patch. It will not be overwritten."
+              exit 1
+            fi
+            echo "Reusing the previously published, matching branch."
+          else
+            remote_status=$?
+            if [[ "$remote_status" -ne 2 ]]; then
+              exit "$remote_status"
+            fi
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "$PR_TITLE"
+            git push origin "$CHANGE_BRANCH"
+          fi
           printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
           url=$(gh pr create --repo "$GITHUB_REPOSITORY" --draft --base "$BASE_BRANCH" --head "$CHANGE_BRANCH" --title "$PR_TITLE" --body-file "$RUNNER_TEMP/pr-body.md")
           echo "pr-url=$url" >> "$GITHUB_OUTPUT"

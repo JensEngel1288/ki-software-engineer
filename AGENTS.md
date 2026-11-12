@@ -12,6 +12,7 @@ browser-local personal lists/edits and light/dark mode.
 Read [ARCHITECTURE.md](ARCHITECTURE.md) for responsibilities, data flow, dependency usage, and known limitations.
 Check the source and configuration when implementing changes; update the architecture document when behavior or
 structure changes.
+See [.github/README.md](.github/README.md) for workflow triggers, repository setup, and publication boundaries.
 
 ## Working conventions
 
@@ -76,3 +77,5 @@ Run commands from the repository root. See [README.md](README.md) for setup.
 - `npm test` points to a Karma scaffold with no source specs or directly declared Karma/Jasmine dependencies. Account for
   this limitation when choosing checks; there is no lint script.
 - Report what changed, which checks actually ran, and any verification limits.
+- For workflow changes, check YAML/action expressions with `actionlint`, formatting with Prettier, and relevant embedded
+  script behavior. Keep local verification separate from executing paid model calls or publishing to GitHub.

@@ -214,6 +214,28 @@ visible selected state. Snackbar colors use the same palette; layout stays local
 
 ## Development commands and tests
 
+### GitHub automation
+
+The [workflow guide](.github/README.md) describes build/test/Pages deployment, OpenAI issue analysis, PR review, issue
+implementation, and CI auto-fix. Codex reads issue/PR snapshots captured through the GitHub API and uses repository
+`AGENTS.md` guidance with explicit prompt files. Analysis/review is read-only; separate jobs publish the resulting
+comments. Implementation and auto-fix produce checked working-tree patches which a shared reusable workflow publishes
+as draft PRs on new branches. Publication verifies the base commit and never directly changes the default branch.
+
+The build workflow runs the six application Chromium suites and publishes the Angular browser artifact when the default
+branch is deployed to Pages, with the Pages base path and an SPA fallback. Repository secrets, Pages enablement, and
+permission to create pull requests are repository settings, not app configuration. Frontend deployment does not provide
+the separate book API. Browser fixtures still establish local application behavior rather than deployed integration.
+
+Build, auto-fix, and issue implementation all validate using `npm run build` and the same application browser suites.
+Node.js 24 is selected through [.node-version](.node-version) and restored after Codex before independent validation.
+Dependency installation explicitly includes development packages; browser binaries are refreshed after reinstalling a
+changed lockfile. The [Pages helper](.github/scripts/prepare-pages.cjs) prepares the generated base URL and route fallback
+after checks, with focused [tests](.github/scripts/prepare-pages.test.cjs). Pages preparation does not change the shared
+build command or application source.
+
+### Local development and checks
+
 Run commands from the repository root. The API and frontend require separate processes.
 
 | Command                | Effect                                                                                                                                                          |

@@ -1,108 +1,107 @@
-# BookMonkey interactive star map
+# GitHub workflow repairs and OpenAI migration
 
 Task status: completed
-Definition status: agreed outcome; routine interaction choices delegated to implementation
-Implementation status: completed and verified
+Definition status: direct user request
+Implementation status: corrected and verified locally
 
-## Sources and scope
+## Source and scope
 
-- The user requested: “mach mir die interaktive sternenkarte welche über einen extra tab auf der home seite erreichbar ist”.
-- This selects the interactive spatial star-map idea from the preceding display-method discussion, not fictional book universes.
-- The earlier discussion proposed keeping search and filters available across display modes. Existing personal-library
-  behavior remains part of the regression contract, recorded in [the completed library brief](bookmonkey-library-completed.md).
-- No GitHub issue or remote update was requested. This is an authorised local implementation task.
+The user requested: “fix alle dateien in workflows und ändere die stellen mit claude zu OpenAI”.
 
-## User story
+This selects all files in .github/workflows for functional repair and migration to
+the existing OpenAI Codex action/model. The previous completed application task
+is preserved in [the Universe brief](bookmonkey-universe-completed.md).
+No commit, push, live workflow dispatch, issue update, or PR publication was
+requested as part of this local repair.
 
-As a BookMonkey reader, I want an interactive star map available through an extra home-page tab, so I can explore books
-spatially and open an interesting book's details.
+## Requirements and evidence
 
-## Acceptance scenarios
+| ID  | Outcome                                | Implementation and verification                                                                                                                                                                                                                                    |
+| --- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| W1  | Replace legacy provider references     | All workflow names, actions, credentials, prompts, and guidance use OpenAI/Codex and AGENTS.md. The selected gpt-5.6-luna model is preserved.                                                                                                                      |
+| W2  | Valid workflow structure and inputs    | Six workflows pass actionlint 1.7.12, including triggers, contexts, action inputs, permissions, reusable calls, and outputs. Custom profile fragments and undefined slash commands are removed.                                                                    |
+| W3  | Working build/test/Pages configuration | The former name-only file now installs dependencies, builds with the Pages base path, checks the six application Chromium suites, uploads the browser artifact and SPA fallback, and deploys only the default branch after successful checks.                      |
+| W4  | Structured issue analysis              | Explicit prompt preserves the seven requested sections. Issue/comments are captured as JSON and read-only analysis is published by a separate job, updating the existing bot comment. Script behavior is verified with mocked API responses.                       |
+| W5  | PR review against real code            | Reads the exact head and diff, uses AGENTS.md, skips forks/drafts/bots, and checks the current head before publishing. Local tests verify stale-head rejection and comment ownership.                                                                              |
+| W6  | Label-driven issue implementation      | ready-for-implementation starts code preparation and independent checks. Verified patches become draft PRs on new branches through a shared publication workflow. Bot proposals are not treated as accepted requirements automatically.                            |
+| W7  | Functional auto-fix and notifications  | Reads logs from failed same-repository default-branch push runs, attempts a source fix, verifies it, and publishes a draft. Separate issue-write notification handles failure/no patch. Tests cover event guards, deduplication, and safe local patch publication. |
 
-### SM1 — Home-page display tabs
+## Changed files
 
-Given the existing home page
-When I choose the Universe tab
-Then an interactive star map replaces the gallery without leaving the home page
-And I can switch back without losing the current search or personal collection selection.
+- .github/workflows/build.yml
+- .github/workflows/issue-analysis.yml
+- .github/workflows/OpenAI-code-review.yml
+- .github/workflows/issue-implementation.yml
+- .github/workflows/auto-fix.yml
+- .github/workflows/publish-changes.yml (shared draft-PR publication)
+- Four prompt files under .github/prompts/
+- [.github/README.md](../../.github/README.md), architecture, and repository guidance
 
-### SM2 — The matching collection becomes stars
+## Verification — 2026-11-12
 
-Given a catalogue with more books than the gallery's initial ten-item limit
-When I open Universe
-Then every matching book has one star, including books beyond the first page
-And the existing literal title search, filters, sort, and personal collection selection apply to the map.
+- actionlint 1.7.12 passed all six workflows. Its official Windows release was
+  downloaded to ignored tmp/workflow-tools and SHA-256 checked against release checksums.
+  Command: tmp/workflow-tools/actionlint/actionlint.exe -shellcheck= -pyflakes=
+- All 23 local behavior checks passed with node --test tmp/check-workflows.cjs.
+  They parse embedded JavaScript/Bash, exercise comment create/update ownership,
+  stale PR heads, trigger filters, attention-report deduplication, and the reusable
+  publication shell against temporary local Git repositories with a fake gh function.
+  No real GitHub mutation occurs in these checks.
+  Matching branch-only publications can be resumed without another commit; differing
+  existing branch contents are preserved and rejected instead of overwritten.
+- npm.cmd run build -- --base-href=/ki-software-engineer/ passed on Windows.
+  The equivalent Linux workflow command uses npm run build with the configured Pages
+  base path. The output is dist/angular-workshop-modern/browser.
+- All 41 existing application Chromium tests passed through the temporary local
+  Playwright runner configuration. There were no failed, skipped, or flaky cases.
+  This local override selects the installed browser; Linux CI installs its matching
+  Chromium and system dependencies. Firefox/WebKit and the unconfigured unit runner
+  were not run.
+- Application source, package manifests, and dependency lockfile were not changed.
+  Formatting, whitespace, and local documentation links were checked.
 
-### SM3 — Explore and open a book
+## Delivery boundary and limits
 
-Given the map is visible
-When I select a star or choose a book through its accessible selector
-Then I see that book's title, author, publisher, and cover preview
-And I can follow a link to the existing details route for the same stable book ID.
+The local workflow configuration and documentation are ready for review. GitHub
+execution, model availability for the user's API project, Pages deployment, and
+real comment/PR publication have not been executed or claimed.
 
-### SM4 — Navigate the map
+Repository setup is documented in [.github/README.md](../../.github/README.md):
+OPENAI_API_KEY, Pages source set to GitHub Actions, and permission for Actions to
+create PRs. Existing model action trust checks require a triggering user with
+repository write access. Generated drafts need human review; no automatic merge
+or issue closure was introduced. GITHUB_TOKEN event-chain limits are documented.
+Frontend hosting does not provision the separate book API.
 
-Given the map is visible
-When I zoom, drag its background, or use its keyboard navigation
-Then the map responds without navigating away
-And Fit all restores the initial overview.
+## Follow-up: build and environment parity
 
-### SM5 — Constellations from available metadata
+The user additionally requested matching build commands, missing environment-variable
+checks, matching Node.js versions, and complete dependency installation.
 
-Given the map contains books from different publishers/authors
-When I change the constellation grouping
-Then the books are grouped using the selected real metadata and the matching book count remains unchanged.
+- **W8:** CI, auto-fix, and issue implementation now use exactly `npm run build`.
+  Pages-specific base/fallback preparation runs afterward through a dedicated helper.
+- **W9:** Required context/log paths, CI, tokens, API-key checks, and the Pages base
+  path are wired at their correct scopes. A missing Pages value fails clearly;
+  an empty root-site value is valid. GitHub secret presence is not locally verified.
+- **W10:** All project setups read Node.js 24 from `.node-version`. Code-changing
+  jobs restore it after the Codex action before independent checks. The installed
+  Angular engines support this version; local verification used Node v24.22.1.
+- **W11:** All dependency installs use `npm ci --include=dev`. OS/browser dependencies
+  are installed before Codex; matching Chromium binaries are refreshed after final
+  dependency verification without requiring sudo.
 
-### SM6 — Accessible, responsive, and recoverable
+Follow-up verification on 2026-11-12:
 
-Given the page is used with a keyboard, a narrow viewport, either theme, or a search with no matches
-When I switch tabs and interact with the map
-Then tab selection and book controls remain keyboard accessible, the page has no horizontal overflow, and empty results
-are explained using the existing feedback patterns.
-And loading/error/retry behavior remains available while the map display is selected.
-
-## Implementation choices
-
-- Preserve the existing English UI; name the extra tab Universe and the default tab Gallery.
-- Use SVG, deterministic pure layout, and existing Angular primitives; no new dependencies or bitmap assets.
-- Group by publisher by default, with author as an alternate. Genre is absent from the current model.
-- Provide selectable stars, a cover preview/details link, zoom/pan/Fit controls, and a native book selector as an accessible
-  alternative to small visual targets. Use roving keyboard focus for stars and proper display-tab semantics.
-- Keep the gallery's paging intact while giving the map the complete filtered/sorted collection. Reuse the same catalogue
-  request and browser-local edits/state; no API writes, new routes, or accounts are needed.
-
-## Validation plan
-
-- Add `tests/universe.spec.ts` with scenario IDs and observe the missing tab fail before production changes.
-- Verify all scenario cases and the existing details/list/library/error/theme suites in Chromium; run `npm run build`.
-- Check desktop and 320px mobile rendering in both themes, pointer/keyboard map navigation, and no unexpected errors.
-- Update architecture and book-feature guidance with the new presentation boundary and actual validation results.
-
-## Implementation and traceability
-
-| Criterion | Implementation                                                                                      | Evidence                                                                                               |
-| --------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| SM1       | Display tabs and local presentation state in `book-list.component`                                  | Keyboard tab switching and preserved search/read-later selection                                       |
-| SM2       | `CollectionPage.matchingBooks` supplies the complete merged projection                              | 250 stars, prefix/longer search, publisher/page filters, sorting, and one catalogue request            |
-| SM3       | Map selection and shared-cover preview link to stable book IDs                                      | Pointer/native selection, displayed metadata, and existing details navigation                          |
-| SM4       | Component-owned camera and pointer/keyboard handlers                                                | Zoom, background drag, Fit, and keyboard star navigation                                               |
-| SM5       | Pure publisher/author constellation layout                                                          | Grouping changes retain the matching stars                                                             |
-| SM6       | Native controls, roving star focus, responsive semantic-theme layout, and page-owned request states | Loading, error/retry/empty, both themes at 320px, no horizontal overflow or captured app error reports |
-
-## Verification — 2026-11-11
-
-- **Red:** before production changes, the SM1 case loaded and searched the existing gallery, then failed waiting for
-  the missing display tabs. Command: `node node_modules/@playwright/test/cli.js test tests/universe.spec.ts --grep "SM1:" --config=tmp/playwright.universe.config.ts --project=chromium --workers=1 --timeout=7000`.
-  Other new interaction cases were scaffolded but not exercised in that Red run because they depend on the same new tab.
-- **Green:** `npm run build` passed, including strict Angular templates. The initial bundle is 445.74 kB.
-- All **41 Chromium tests** passed (32 prior application checks plus 9 Universe cases), with zero failed, skipped, or
-  flaky tests. Command: `node node_modules/@playwright/test/cli.js test tests/book-details.spec.ts tests/book-list.spec.ts tests/error-handling.spec.ts tests/theme.spec.ts tests/library.spec.ts tests/universe.spec.ts --config=tmp/playwright.universe.config.ts --project=chromium --workers=1`.
-- Desktop and 320px light/dark screenshots were inspected. A visual hit-area problem found by the pointer-selection
-  test was fixed by separating labels from interactive star groups; decorative halos/rings do not intercept selection.
-  Dense groups use smaller hit targets, with the native selector retained as a touch/keyboard alternative.
-- Validation uses intercepted API/cover fixtures, not live backend integration. The ignored temporary runner config uses
-  the installed Chromium executable and captures screenshots. Playwright emitted a `step id not found: fixture@72`
-  reporter diagnostic during the pre-existing multi-context library test; its structured result has no run errors and
-  all 41 cases passed. Firefox/WebKit and unconfigured Jasmine/Karma unit tests were not run.
-- Architecture and scoped guidance describe the new boundaries. The completed personal-library brief is preserved
-  separately. No GitHub issue was selected or updated, and no deployment was requested.
+- `npm.cmd ls --all --json`: zero dependency problems; all 29 top-level packages
+  and their dependency trees resolve. No package manifest/lockfile changes or
+  dependency reinstall were needed locally.
+- `npm.cmd run build`: passed using the exact shared build command.
+- `node --test .github/scripts/prepare-pages.test.cjs`: all 8 cases passed,
+  covering project/root paths, quoting, repeated preparation, and missing/invalid input.
+- `node --test tmp/check-workflows.cjs`: all 27 local workflow checks passed,
+  including build/browser command parity, Node setup/restoration, dependency order,
+  required environment wiring, and the previous publication/notification behavior.
+- Actual generated index/404 files were prepared and checked for the Pages path.
+- `actionlint`, formatting, whitespace, and local link checks passed. Existing
+  application source was unchanged; the preceding 41 application checks remain
+  recorded above. No live GitHub workflow or paid model call was started.

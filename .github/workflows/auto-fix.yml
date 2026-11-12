@@ -34,7 +34,6 @@ jobs:
     env:
       FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
       FAILED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-      FAILED_LOG_FILE: ${{ runner.temp }}/failed-ci.log
     steps:
       - name: Checkout failed revision
         uses: actions/checkout@v6
@@ -50,16 +49,17 @@ jobs:
       - name: Download failed CI logs
         env:
           GH_TOKEN: ${{ github.token }}
+          FAILED_LOG_FILE: ${{ runner.temp }}/failed-ci.log
         run: gh run view "$FAILED_RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed > "$FAILED_LOG_FILE"
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version-file: .node-version
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=dev
 
       - name: Install Chromium and system dependencies
         run: npx playwright install --with-deps chromium
@@ -76,18 +76,32 @@ jobs:
       - name: Repair CI with OpenAI Codex
         id: fix
         uses: openai/codex-action@v1
+        env:
+          FAILED_LOG_FILE: ${{ runner.temp }}/failed-ci.log
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          permission-profile: ':workspace'
+          sandbox: workspace-write
           safety-strategy: drop-sudo
           model: gpt-5.6-luna
           prompt-file: .github/prompts/auto-fix.md
 
+      - name: Restore project Node.js for verification
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+          cache: npm
+
       - name: Verify dependency lockfile
-        run: npm ci
+        run: npm ci --include=dev
+
+      - name: Install matching Chromium after dependency verification
+        run: npx playwright install chromium
 
       - name: Verify production build
         run: npm run build
+
+      - name: Verify Pages artifact preparation
+        run: node --test .github/scripts/prepare-pages.test.cjs
 
       - name: Verify application browser tests
         run: >-
@@ -144,6 +158,9 @@ jobs:
 
         OpenAI Codex prepared this change. The production build and application
         Chromium suites passed before publication. Review the draft before merging.
+
+        Verified base: ${{ needs.auto-fix.outputs.base-sha }}
+        Verification run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
         ${{ needs.auto-fix.outputs.report }}
 

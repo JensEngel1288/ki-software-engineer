@@ -24,9 +24,6 @@ jobs:
       pull-requests: read
     outputs:
       report: ${{ steps.review.outputs.final-message }}
-    env:
-      PR_CONTEXT_FILE: ${{ runner.temp }}/pr-context.json
-      PR_DIFF_FILE: ${{ runner.temp }}/pr.diff
     steps:
       - name: Checkout pull request head
         uses: actions/checkout@v6
@@ -37,6 +34,9 @@ jobs:
 
       - name: Read pull request and diff
         uses: actions/github-script@v8
+        env:
+          PR_CONTEXT_FILE: ${{ runner.temp }}/pr-context.json
+          PR_DIFF_FILE: ${{ runner.temp }}/pr.diff
         with:
           script: |
             const fs = require('node:fs');
@@ -65,9 +65,12 @@ jobs:
       - name: Review code with OpenAI Codex
         id: review
         uses: openai/codex-action@v1
+        env:
+          PR_CONTEXT_FILE: ${{ runner.temp }}/pr-context.json
+          PR_DIFF_FILE: ${{ runner.temp }}/pr.diff
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          permission-profile: ':read-only'
+          sandbox: read-only
           safety-strategy: drop-sudo
           model: gpt-5.6-luna
           prompt-file: .github/prompts/code-review.md
