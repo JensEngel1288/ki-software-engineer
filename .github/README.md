@@ -21,10 +21,21 @@ dependencies.
   access to the selected model. No second provider key is used.
 - Under **Settings → Actions → General → Workflow permissions**, allow GitHub
   Actions to create pull requests. Organisation policies may also restrict this.
-  Individual jobs declare the token permissions they need; no PAT is required.
-- Under **Settings → Pages**, select **GitHub Actions** as the deployment source.
-  Pages must be available/enabled for the repository. The configure step reads the
-  site's base path. After verification, [prepare-pages.cjs](scripts/prepare-pages.cjs)
+  Individual jobs declare the token permissions they need and use `GITHUB_TOKEN`;
+  the Pages configuration step below uses a separate token.
+- Save the value of your personal token (for example, the token labelled
+  `github-actions-issue-analysis`) under **Settings → Secrets and variables →
+  Actions → New repository secret** as `PAGES_SETUP_TOKEN`. Creating a personal
+  token does not automatically create an Actions secret. A fine-grained PAT needs
+  access to this repository and **Pages: Read and write** permission; a classic
+  PAT needs the `repo` scope. An Issues-only token cannot enable Pages.
+- The default-branch Configure Pages step uses `PAGES_SETUP_TOKEN` and
+  `enablement: true` to enable Pages automatically if needed. A missing secret
+  fails with a specific setup message. Pull requests and other branches skip this
+  step and its token check. Pages must be available for the repository's plan and
+  organisation policy. Under **Settings → Pages**, the deployment source should
+  be **GitHub Actions**. The configure step reads the site's base path.
+  After verification, [prepare-pages.cjs](scripts/prepare-pages.cjs)
   applies it to the generated index and creates an identical `404.html` fallback
   for direct links to client-side book routes. Every validation build still uses
   the unchanged `npm run build` command.
@@ -61,7 +72,10 @@ the browser binary to match the lockfile without requiring sudo.
 `CI` is set for all validation jobs. `GH_TOKEN` is provided only to the steps
 running `gh`; GitHub script steps use their action-provided token. Context/log
 file paths are explicitly supplied to their producing and consuming steps.
-`OPENAI_API_KEY` is checked before every model invocation. `PAGES_BASE_PATH` is
+`OPENAI_API_KEY` is checked before every model invocation. `PAGES_SETUP_TOKEN`
+is checked before Pages configuration and supplied only to that action; the
+deployment job and issue/PR workflows continue using their automatic tokens.
+`PAGES_BASE_PATH` is
 supplied only to artifact preparation from Configure Pages; an empty value is
 valid for a root/custom-domain site, while a missing value is rejected. These
 checks validate configuration wiring; local checks cannot prove that a repository
@@ -94,5 +108,6 @@ for local syntax and mocked behavior checks.
 
 Configuration references: [Codex action](https://learn.chatgpt.com/docs/github-action),
 [action inputs](https://github.com/openai/codex-action/blob/v1/action.yml),
+[Pages setup token](https://github.com/actions/configure-pages/blob/v5/action.yml),
 [Pages workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages),
 and [workflow_run](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run).

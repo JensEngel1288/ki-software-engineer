@@ -223,8 +223,10 @@ comments. Implementation and auto-fix produce checked working-tree patches which
 as draft PRs on new branches. Publication verifies the base commit and never directly changes the default branch.
 
 The build workflow runs the six application Chromium suites and publishes the Angular browser artifact when the default
-branch is deployed to Pages, with the Pages base path and an SPA fallback. Repository secrets, Pages enablement, and
-permission to create pull requests are repository settings, not app configuration. Frontend deployment does not provide
+branch is deployed to Pages, with the Pages base path and an SPA fallback. On default-branch runs, Configure Pages uses
+the `PAGES_SETUP_TOKEN` repository secret and automatic enablement; other GitHub operations use the automatic job token.
+Repository secrets, Pages availability, and permission to create pull requests are repository settings, not app
+configuration. Frontend deployment does not provide
 the separate book API. Browser fixtures still establish local application behavior rather than deployed integration.
 
 Build, auto-fix, and issue implementation all validate using `npm run build` and the same application browser suites.

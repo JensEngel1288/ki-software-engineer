@@ -105,3 +105,22 @@ Follow-up verification on 2026-11-12:
 - `actionlint`, formatting, whitespace, and local link checks passed. Existing
   application source was unchanged; the preceding 41 application checks remain
   recorded above. No live GitHub workflow or paid model call was started.
+
+## Follow-up: use the personal token for Pages setup
+
+The user authorised the proposed workflow change after reporting a Configure Pages
+404 and identifying a personal token labelled `github-actions-issue-analysis`.
+
+- **W12:** Configure Pages now explicitly uses `${{ secrets.PAGES_SETUP_TOKEN }}`
+  with `enablement: true`. A default-branch-only check reports a missing secret
+  clearly. The same guard excludes PRs and other branches from both setup steps.
+- The PAT is scoped to Pages configuration. Issue analysis/implementation, review,
+  PR publication, and Pages deployment retain their existing automatic job tokens.
+- Repository setup instructions explain saving the token value as the separate
+  Actions secret `PAGES_SETUP_TOKEN` with repository access and Pages write permission.
+- The token value and GitHub secret configuration are unavailable locally. Creating
+  the repository secret and executing the updated workflow remain external setup
+  steps; no secret value was requested, stored in source, or sent to GitHub.
+- Verification on 2026-11-12: actionlint and formatting passed. Local checks
+  verified secret wiring, matching branch guards, and the shell check with both
+  an empty value (clear failure) and a dummy value (success), without GitHub calls.
