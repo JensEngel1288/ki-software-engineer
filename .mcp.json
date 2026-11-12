@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "workshops-de-angular-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["D:/ki-software-engineer/dist/angular-mcp/index.js"],
+      "tools": ["generate_component"]
+    }
+  }
+}

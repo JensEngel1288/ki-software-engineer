@@ -258,6 +258,15 @@ build command or application source.
 
 Run commands from the repository root. The API and frontend require separate processes.
 
+The custom [Angular component MCP server](tools/angular-mcp/index.ts) is separate from the Angular CLI's built-in MCP
+server configured in `.cursor/mcp.json`. Build it with `npm run build.angular-mcp` and start it with
+`node dist/angular-mcp/index.js`. Its `generate_component` tool invokes the installed CLI with separate arguments,
+supports paths with or without the `src/app` prefix, and returns tool errors for failed generation. Diagnostic logs
+use stderr so stdout remains an MCP protocol channel. Register it separately in `~/.cursor/mcp.json` with the absolute
+compiled-server path; the project MCP configuration retains the Angular CLI's built-in server.
+VS Code's Copilot harness reads the custom server from the workspace [.mcp.json](.mcp.json), using the native
+`mcpServers` schema. That entry contains this checkout's absolute compiled-server path; adjust it for another location.
+
 | Command                | Effect                                                                                                                                                          |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm install`          | Installs the frontend dependencies.                                                                                                                             |
