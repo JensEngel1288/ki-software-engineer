@@ -259,7 +259,10 @@ build command or application source.
 Run commands from the repository root. The API and frontend require separate processes.
 
 `npm run eval.gpt` starts the separate code-generation playground through
-[tools/eval.mjs](tools/eval.mjs). The launcher uses the playground's working directory, selects `gpt-5.1-no-thinking`
+the Git submodule registered in [.gitmodules](.gitmodules). Its URL matches the playground's existing `origin`, and
+the parent repository pins its commit. Initialize the submodule before installing its evaluator dependencies.
+[tools/eval.mjs](tools/eval.mjs) supplies the evaluation launcher.
+The launcher uses the playground's working directory, selects `gpt-5.1-no-thinking`
 for the goal-tracker prompt, forwards extra arguments, and normalizes absolute Windows ES module imports
 for scorer 0.0.69. The playground installs Angular template dependencies during evaluation. Live runs require
 `OPENAI_API_KEY` for generation and `GEMINI_API_KEY` for the existing default ratings/summary. The scorer maps the GPT

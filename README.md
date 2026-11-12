@@ -26,6 +26,8 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the tech stack, dependencies, and a
 ## Code generation evaluation
 
 The evaluator lives in `web-codegen-scorer-playground`. From this repository root,
+initialize it on a fresh checkout with
+`git submodule update --init -- web-codegen-scorer-playground`, then
 install its dependencies with `npm --prefix web-codegen-scorer-playground install`.
 Use the project's Node.js 24 version. In PowerShell, configure credentials for the
 GPT-5.1 generator and Gemini automatic ratings/summary, then run:

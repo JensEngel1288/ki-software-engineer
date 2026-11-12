@@ -1,0 +1,3 @@
+[submodule "web-codegen-scorer-playground"]
+	path = web-codegen-scorer-playground
+	url = https://github.com/GregOnNet/web-codegen-scorer-playground.git
