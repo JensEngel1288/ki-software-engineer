@@ -1,0 +1,189 @@
+name: Auto-Fix CI Failures with OpenAI
+
+on:
+  workflow_run:
+    workflows: ['Deploy to GitHub Pages']
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auto-fix-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+env:
+  CI: true
+
+jobs:
+  auto-fix:
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      report: ${{ steps.fix.outputs.final-message }}
+      has-changes: ${{ steps.patch.outputs.has-changes }}
+      base-sha: ${{ steps.base.outputs.sha }}
+    env:
+      FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
+      FAILED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      FAILED_LOG_FILE: ${{ runner.temp }}/failed-ci.log
+    steps:
+      - name: Checkout failed revision
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Record fix base
+        id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Download failed CI logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run view "$FAILED_RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed > "$FAILED_LOG_FILE"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Check OpenAI API key
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [[ -z "$OPENAI_API_KEY" ]]; then
+            echo "::error::Configure the OPENAI_API_KEY repository secret."
+            exit 1
+          fi
+
+      - name: Repair CI with OpenAI Codex
+        id: fix
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          permission-profile: ':workspace'
+          safety-strategy: drop-sudo
+          model: gpt-5.6-luna
+          prompt-file: .github/prompts/auto-fix.md
+
+      - name: Verify dependency lockfile
+        run: npm ci
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Verify application browser tests
+        run: >-
+          npx playwright test tests/book-details.spec.ts tests/book-list.spec.ts
+          tests/library.spec.ts tests/error-handling.spec.ts tests/theme.spec.ts
+          tests/universe.spec.ts --project=chromium
+
+      - name: Package verified changes
+        id: patch
+        env:
+          EXPECTED_SHA: ${{ steps.base.outputs.sha }}
+        run: |
+          if [[ "$(git rev-parse HEAD)" != "$EXPECTED_SHA" ]]; then
+            echo "::error::The agent changed Git history instead of leaving a working-tree patch."
+            exit 1
+          fi
+          git add --intent-to-add -- .
+          if [[ -n "$(git diff HEAD --name-only -- .github .cursor .codex .agents AGENTS.md ':(glob)**/AGENTS.md')" ]]; then
+            echo "::error::Automated changes to workflow/agent configuration are not permitted."
+            exit 1
+          fi
+          git diff HEAD --binary > "$RUNNER_TEMP/changes.patch"
+          if [[ -s "$RUNNER_TEMP/changes.patch" ]]; then
+            echo "has-changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload verified patch
+        if: steps.patch.outputs.has-changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-patch
+          path: ${{ runner.temp }}/changes.patch
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-change:
+    needs: auto-fix
+    if: needs.auto-fix.outputs.has-changes == 'true'
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    uses: ./.github/workflows/publish-changes.yml
+    with:
+      artifact-name: verified-patch
+      source-sha: ${{ needs.auto-fix.outputs.base-sha }}
+      base-branch: ${{ github.event.repository.default_branch }}
+      change-branch: auto-fix/ci-${{ github.event.workflow_run.id }}-${{ github.run_id }}
+      title: 'fix: repair CI run ${{ github.event.workflow_run.id }}'
+      body: |
+        Repairs CI run ${{ github.event.workflow_run.html_url }}.
+
+        OpenAI Codex prepared this change. The production build and application
+        Chromium suites passed before publication. Review the draft before merging.
+
+        ${{ needs.auto-fix.outputs.report }}
+
+  notify-failure:
+    needs: [auto-fix, publish-change]
+    if: >-
+      always() &&
+      (needs.auto-fix.result == 'failure' || needs.publish-change.result == 'failure' ||
+      (needs.auto-fix.result == 'success' && needs.auto-fix.outputs.has-changes != 'true'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Report an auto-fix requiring attention
+        uses: actions/github-script@v8
+        env:
+          REPORT: ${{ needs.auto-fix.outputs.report }}
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const marker = '<!-- openai-auto-fix:' + run.id + ' -->';
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              ...context.repo, state: 'open', per_page: 100
+            });
+            if (issues.some(issue => !issue.pull_request && issue.body?.startsWith(marker))) {
+              core.info('An attention issue for this CI failure already exists.');
+              return;
+            }
+            const body = [
+              marker, '## OpenAI auto-fix needs attention', '',
+              'No verified draft PR could be published for the failed CI run.',
+              '- Failed workflow: ' + run.name,
+              '- Branch: ' + run.head_branch,
+              '- Commit: ' + run.head_sha,
+              '- Failed run: ' + run.html_url,
+              '- Auto-fix run: ' + process.env.GITHUB_SERVER_URL + '/' +
+                context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId,
+              '', process.env.REPORT || 'Inspect the workflow logs for the exact failure.'
+            ].join('\n').slice(0, 60000);
+            await github.rest.issues.create({
+              ...context.repo, title: 'OpenAI auto-fix needs attention: CI run ' + run.id, body
+            });
