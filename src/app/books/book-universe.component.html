@@ -10,7 +10,7 @@
     </div>
     <label class="grid max-w-full gap-1 text-sm font-medium">
       Group constellations by
-      <select class="form-control" [ngModel]="grouping()" (ngModelChange)="changeGrouping($event)">
+      <select #groupSelect class="form-control" [value]="grouping()" (change)="changeGrouping(groupSelect.value)">
         <option value="publisher">Publisher</option>
         <option value="author">Author</option>
       </select>
@@ -116,7 +116,7 @@
     <aside aria-label="Selected book" class="min-w-0 border-t border-divider p-5 lg:border-l lg:border-t-0">
       <label class="mb-5 grid gap-1 text-sm font-medium">
         Choose a book
-        <select class="form-control" [ngModel]="selectedBook()?.id" (ngModelChange)="chooseBook($event)">
+        <select #bookSelect class="form-control" [value]="selectedBook()?.id" (change)="chooseBook(bookSelect.value)">
           @for (star of layout().stars; track star.book.id) {
             <option [value]="star.book.id">{{ star.book.title }}</option>
           }

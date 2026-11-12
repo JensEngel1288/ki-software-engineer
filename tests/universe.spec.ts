@@ -119,6 +119,37 @@ test('SM3: selecting stars and the native selector previews books and opens thei
   await expect(page.getByRole('article').getByRole('heading', { name: 'Extra Book 12', exact: true })).toBeVisible();
 });
 
+test('SM3: preview covers recover between books and collection changes preserve a valid selection', async ({
+  page
+}) => {
+  const broken = { ...book, cover: 'http://localhost:4730/covers/broken.svg' };
+  const healthy = { ...book, id: 'healthy', title: 'Healthy Cover', author: 'Bea Reader' };
+  await mockBooks(page, [broken, healthy]);
+  await page.route(broken.cover, route => route.abort());
+  await page.goto(appUrl);
+  await page.getByRole('tab', { name: 'Universe', exact: true }).click();
+  const preview = page.getByRole('complementary', { name: 'Selected book', exact: true });
+  const selector = page.getByRole('combobox', { name: 'Choose a book', exact: true });
+  await expect(preview.getByText('No cover available', { exact: true })).toBeVisible();
+  await selector.selectOption(healthy.id);
+  const cover = preview.getByRole('img', { name: healthy.title, exact: true });
+  await expect(cover).toBeVisible();
+  await expect.poll(() => cover.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+  await expect(preview.getByText('No cover available', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Map zoom', { exact: true })).toHaveText('200%');
+
+  await page.getByRole('combobox', { name: 'Sort books', exact: true }).selectOption('title-desc');
+  await expect(page.getByLabel('Map zoom', { exact: true })).toHaveText('100%');
+  await expect(selector).toHaveValue(healthy.id);
+  await expect(preview.getByRole('heading', { name: healthy.title, exact: true })).toBeVisible();
+
+  await page.getByLabel('Filter by author', { exact: true }).fill(book.author);
+  await expect(selector).toHaveValue(broken.id);
+  await expect(preview.getByRole('heading', { name: book.title, exact: true })).toBeVisible();
+  await expect(preview.getByText('No cover available', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Select book:/ })).toHaveCount(1);
+});
+
 test('SM4: zoom, background dragging, Fit all, and keyboard star navigation work', async ({ page }) => {
   await mockBooks(page, catalogue);
   await page.goto(appUrl);

@@ -19,6 +19,9 @@ query lifecycle and error-reporting boundaries.
 - [book-item.component.ts](book-item.component.ts) presents its `Book` input and links the title to the details route.
   Keep it free of HTTP requests. Use [book-cover.component.ts](book-cover.component.ts) for both missing and broken covers;
   its image failure state resets when the source changes.
+- Production components use signal inputs/outputs and `OnPush`. Cover failure, map selection, and map camera reset
+  through `linkedSignal` when their source data changes. Keep a selected book while it still matches; otherwise select
+  the first match. Updated map data returns the camera to the overview.
 - [book-details.component.ts](book-details.component.ts) loads the book from the route ID and owns details loading,
   not-found, request-error, and retry states. Its cover uses the same presentation component as cards.
 - [request-state.ts](request-state.ts) defines the discriminated request-state union. Successful states contain data;
@@ -31,6 +34,9 @@ query lifecycle and error-reporting boundaries.
 - [book-edit.component.ts](book-edit.component.ts) loads the original book and supplies a separate editing draft to
   [book-edit-form.component.ts](book-edit-form.component.ts). Save updates browser state; Cancel must not mutate the book.
   Preserve IDs, keep price as display text, and validate a nonblank title and positive whole-number page count.
+- Editing and collection filters use typed reactive forms. Copy incoming editor data into the independent form in
+  `ngOnChanges`; changes to the draft must never mutate the input book. Filter input synchronization suppresses form
+  emissions; its user-change subscription uses `takeUntilDestroyed`. Clear resets all controls and emits once.
 
 - [book-universe.component.ts](book-universe.component.ts) owns the home-page Universe display's SVG, preview, selection,
   and camera controls. [book-universe-layout.ts](book-universe-layout.ts) provides pure deterministic constellation layout

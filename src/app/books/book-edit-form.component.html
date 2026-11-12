@@ -1,66 +1,51 @@
-<form
-  #editForm="ngForm"
-  (ngSubmit)="editForm.valid && submit()"
-  class="rounded-xl border border-divider bg-surface p-5 sm:p-8"
->
+<form [formGroup]="form" (ngSubmit)="submit()" class="rounded-xl border border-divider bg-surface p-5 sm:p-8">
   <div class="grid gap-5 sm:grid-cols-2">
     <label class="grid content-start gap-1 text-sm font-medium sm:col-span-2"
       >Title
-      <input name="title" aria-label="Title" [(ngModel)]="model.title" required class="form-control" #title="ngModel" />
-      @if (title.touched && !model.title.trim()) {
+      <input name="title" aria-label="Title" formControlName="title" required class="form-control" />
+      @if (form.controls.title.touched && form.controls.title.invalid) {
         <span class="text-accent">Enter a book title.</span>
       }
     </label>
     <label class="grid content-start gap-1 text-sm font-medium sm:col-span-2"
       >Subtitle
-      <input name="subtitle" [(ngModel)]="model.subtitle" class="form-control" />
+      <input name="subtitle" formControlName="subtitle" class="form-control" />
     </label>
     <label class="grid content-start gap-1 text-sm font-medium"
       >Author
-      <input name="author" [(ngModel)]="model.author" class="form-control" />
+      <input name="author" formControlName="author" class="form-control" />
     </label>
     <label class="grid content-start gap-1 text-sm font-medium"
       >Publisher
-      <input name="publisher" [(ngModel)]="model.publisher" class="form-control" />
+      <input name="publisher" formControlName="publisher" class="form-control" />
     </label>
     <label class="grid content-start gap-1 text-sm font-medium"
       >ISBN
-      <input name="isbn" [(ngModel)]="model.isbn" class="form-control" />
+      <input name="isbn" formControlName="isbn" class="form-control" />
     </label>
     <label class="grid content-start gap-1 text-sm font-medium"
       >Page count
-      <input
-        name="numPages"
-        type="number"
-        min="1"
-        step="1"
-        [(ngModel)]="model.numPages"
-        required
-        class="form-control"
-        #pages="ngModel"
-      />
-      @if (pages.touched && !validPages) {
+      <input name="numPages" type="number" min="1" step="1" formControlName="numPages" required class="form-control" />
+      @if (form.controls.numPages.touched && form.controls.numPages.invalid) {
         <span class="text-accent">Enter a whole number greater than zero.</span>
       }
     </label>
     <label class="grid content-start gap-1 text-sm font-medium"
       >Price
-      <input name="price" [(ngModel)]="model.price" class="form-control" />
+      <input name="price" formControlName="price" class="form-control" />
       <span class="font-normal text-muted">Include the currency as you want it displayed.</span>
     </label>
     <label class="grid content-start gap-1 text-sm font-medium"
       >Cover URL
-      <input name="cover" type="url" [(ngModel)]="model.cover" class="form-control" />
+      <input name="cover" type="url" formControlName="cover" class="form-control" />
     </label>
     <label class="grid content-start gap-1 text-sm font-medium sm:col-span-2"
       >Description
-      <textarea name="abstract" [(ngModel)]="model.abstract" rows="6" class="form-control"></textarea>
+      <textarea name="abstract" formControlName="abstract" rows="6" class="form-control"></textarea>
     </label>
   </div>
   <div class="mt-6 flex flex-wrap items-center gap-4">
-    <button type="submit" class="button-primary" [disabled]="editForm.invalid || !model.title.trim() || !validPages">
-      Save changes
-    </button>
-    <a [routerLink]="['/books', id]" class="text-link">Cancel</a>
+    <button type="submit" class="button-primary" [disabled]="form.invalid">Save changes</button>
+    <a [routerLink]="['/books', book().id]" class="text-link">Cancel</a>
   </div>
 </form>

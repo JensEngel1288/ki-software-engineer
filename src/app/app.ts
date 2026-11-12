@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { BookLibraryService } from './books/book-library.service';
 import { ErrorReporter } from './shared/error-reporter.service';
@@ -7,6 +7,7 @@ import { ThemeService } from './shared/theme.service';
 
 @Component({
   selector: 'app-root',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterOutlet, StateMessageComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'

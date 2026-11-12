@@ -1,21 +1,21 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { ReadingStatus } from './book-library';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ReadingStatus, readingStatuses } from './book-library';
 
 @Component({
   selector: 'app-book-library-controls',
-  imports: [FormsModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-wrap items-end gap-3">
-      <button type="button" class="button-secondary" [attr.aria-pressed]="saved" (click)="savedToggle.emit()">
-        {{ saved ? 'Remove from read later' : 'Save for later' }}
+      <button type="button" class="button-secondary" [attr.aria-pressed]="saved()" (click)="savedToggle.emit()">
+        {{ saved() ? 'Remove from read later' : 'Save for later' }}
       </button>
       <label class="grid min-w-0 gap-1 text-sm font-medium">
         <span>Reading status</span>
         <select
-          [attr.aria-label]="'Reading status for ' + title"
-          [ngModel]="status"
-          (ngModelChange)="statusChange.emit($event)"
+          #statusSelect
+          [attr.aria-label]="'Reading status for ' + title()"
+          [value]="status()"
+          (change)="changeStatus(statusSelect.value)"
           class="form-control"
         >
           <option value="">Not set</option>
@@ -28,9 +28,14 @@ import { ReadingStatus } from './book-library';
   `
 })
 export class BookLibraryControlsComponent {
-  @Input() saved = false;
-  @Input() status: ReadingStatus | '' = '';
-  @Input() title = '';
-  @Output() savedToggle = new EventEmitter<void>();
-  @Output() statusChange = new EventEmitter<ReadingStatus | ''>();
+  readonly saved = input(false);
+  readonly status = input<ReadingStatus | ''>('');
+  readonly title = input('');
+  readonly savedToggle = output<void>();
+  readonly statusChange = output<ReadingStatus | ''>();
+
+  protected changeStatus(value: string): void {
+    const status = readingStatuses.find(status => status === value);
+    if (value === '' || status) this.statusChange.emit(status ?? '');
+  }
 }

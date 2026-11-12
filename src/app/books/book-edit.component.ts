@@ -1,6 +1,6 @@
 import { AsyncPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   catchError,
@@ -26,6 +26,7 @@ type EditState = RequestState<Book> | { status: 'not-found' };
 
 @Component({
   selector: 'app-book-edit',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [AsyncPipe, RouterLink, BookEditFormComponent, LoadingIndicatorComponent, StateMessageComponent],
   templateUrl: './book-edit.component.html'
 })

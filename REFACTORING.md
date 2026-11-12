@@ -276,3 +276,31 @@ Formatting, 83 local documentation links, and whitespace checks passed as well. 
 configuration for the installed Chromium; machine-specific paths are not part of committed test configuration. Firefox
 and WebKit were not run. The existing Karma scaffold and unused workshop dependencies remain documented separately in
 `ARCHITECTURE.md`; they are not prerequisites for the browser suites.
+
+## Angular CLI modernization — 2026-11-12
+
+The installed Angular CLI 20.2.0 MCP server's `get_best_practices` tool supplied
+the guide for this explicitly requested application-wide cleanup. The application
+retains its Angular version and dependencies. The intentionally flawed, unrouted
+review exercises remain separate from production conventions.
+
+- All 12 production components use `OnPush` and the default standalone behavior.
+  Component contracts use `input()`/`output()`; synchronous local/derived state
+  uses signals, `computed()`, and source-linked writable state where appropriate.
+- Collection, details, and editing routes use lazy `loadComponent` imports.
+  The unused legacy animation provider was removed. The initial production bundle
+  decreased from 445.74 kB to 307.44 kB; route chunks load separately.
+- Editing and multi-field filters use typed reactive forms. Validation preserves
+  trimmed nonblank titles and positive whole-number page counts; Cancel retains
+  an independent draft. Filter synchronization suppresses feedback emissions,
+  and its user-change subscription tears down with the component.
+- Simple search/status/map controls use native value/event bindings. Existing
+  RxJS request composition retains debounce, cancellation, retry, and async-pipe
+  ownership. Toast dependencies now use `inject()`.
+
+The baseline production build and 41 Chromium cases passed before edits. The final
+production build and all 42 Chromium cases passed, including a new behavior case
+for broken-to-valid cover recovery, preserved selection, camera reset on new
+matches, and fallback selection after filtering. Existing test assertions and
+package manifests/lockfile were preserved. The local runner uses the installed
+Chromium; Firefox/WebKit and the incomplete Karma scaffold were not run.

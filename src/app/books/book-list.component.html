@@ -69,13 +69,14 @@
     <label for="book-search" class="sr-only">Search books</label>
     <input
       id="book-search"
+      #searchInput
       type="text"
-      [ngModel]="searchTerm"
-      (ngModelChange)="onSearchChange($event)"
+      [value]="searchTerm()"
+      (input)="onSearchChange(searchInput.value)"
       placeholder="Search for books..."
       class="focus-ring mr-3 w-full min-w-0 rounded-sm border-none bg-transparent px-2 py-1 placeholder:text-muted"
     />
-    @if (searchTerm) {
+    @if (searchTerm()) {
       <button type="button" aria-label="Clear search" (click)="clearSearch()" class="button-secondary">Clear</button>
     }
   </div>

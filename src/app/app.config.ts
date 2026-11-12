@@ -7,7 +7,6 @@ import {
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection
 } from '@angular/core';
-import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { BOOK_API_URL } from './books/book-api.config';
@@ -25,7 +24,6 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(BookLibraryService).initialize()),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([httpErrorInterceptor])),
-    provideAnimations()
+    provideHttpClient(withInterceptors([httpErrorInterceptor]))
   ]
 };

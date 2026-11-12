@@ -12,10 +12,9 @@ Versions below are the declarations in [package.json](./package.json). [package-
 | ------------------------------------------------------------------------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@angular/core`, `@angular/common`, `@angular/compiler`, `@angular/platform-browser` | `20.2.1`            | Components, dependency injection, common template directives, template compilation, browser bootstrap, and `HttpClient` from `@angular/common/http`. |
 | `@angular/router`                                                                    | `20.2.1`            | Displays the book list and book details in the root router outlet and redirects unknown URLs to the home route.                                      |
-| `@angular/forms`                                                                     | `20.2.1`            | Template-driven search/filter controls, personal reading-status controls, and validated book-editing drafts.                                         |
+| `@angular/forms`                                                                     | `20.2.1`            | Typed reactive forms for collection filters and validated independent editing drafts. Single-action controls use native value/event bindings.        |
 | `rxjs`                                                                               | `7.8.0`             | Supplies typed API and view-state streams, cancels obsolete searches and route requests, and coordinates retries.                                    |
 | `zone.js`                                                                            | `0.15.0`            | Loaded as a polyfill; zone-based change detection is configured with event coalescing.                                                               |
-| `@angular/animations`                                                                | `20.2.1`            | Animation support is registered through `provideAnimations()`.                                                                                       |
 | `@angular/material`, `@angular/cdk`                                                  | `^20.2.0`, `20.2.0` | Material snackbar support in `ToastService`, with CDK as supporting UI infrastructure. The current book screen does not call the toast service.      |
 | `tslib`                                                                              | `2.3.0`             | Runtime helpers for TypeScript compilation; `importHelpers` is enabled.                                                                              |
 
@@ -34,6 +33,9 @@ Versions below are the declarations in [package.json](./package.json). [package-
 
 ### Additional declared dependencies
 
+`@angular/animations` remains declared for the workshop but has no application provider or animation triggers.
+Application transitions use CSS; the unused legacy animation provider has been removed.
+
 | Dependency                                            | Declared version            | Current integration                                                                                            |
 | ----------------------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `@ngrx/signals`                                       | `20.0.1`                    | No Signal Store is defined or used in the current source.                                                      |
@@ -50,9 +52,9 @@ separate owners.
 | File or directory                                                                                                                                        | Responsibility                                                                                                                                                        |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [src/main.ts](src/main.ts)                                                                                                                               | Bootstraps the app and reports bootstrap failures through the same deduplication function used at runtime.                                                            |
-| [app.config.ts](src/app/app.config.ts)                                                                                                                   | Routing, API URL, HTTP error infrastructure, animations, zone change detection, and explicit theme/library initializers.                                              |
+| [app.config.ts](src/app/app.config.ts)                                                                                                                   | Routing, API URL, HTTP error infrastructure, zone change detection, and explicit theme/library initializers.                                                          |
 | [app.ts](src/app/app.ts), [app.html](src/app/app.html), [app.css](src/app/app.css)                                                                       | Root shell with the theme switch, unexpected-error notice, router outlet, and footer. The component class only injects services.                                      |
-| [app.routes.ts](src/app/app.routes.ts)                                                                                                                   | Routes for collection, details, and `/books/:id/edit`, with the wildcard redirect last.                                                                               |
+| [app.routes.ts](src/app/app.routes.ts)                                                                                                                   | Lazy component routes for collection, details, and `/books/:id/edit`, with the wildcard redirect last.                                                                |
 | [book-list.component.ts](src/app/books/book-list.component.ts), [HTML](src/app/books/book-list.component.html)                                           | Loads the full catalogue, combines browser-local state and debounced queries, and renders a limited, extendable result set.                                           |
 | [book-details.component.ts](src/app/books/book-details.component.ts), [HTML](src/app/books/book-details.component.html)                                  | Loads a book by route ID, applies local edits, records successful views, and exposes saved/status controls.                                                           |
 | [book-item.component.ts](src/app/books/book-item.component.ts)                                                                                           | Presents a book, links to details/editing, and emits saved/status actions through shared personal controls.                                                           |
@@ -74,8 +76,15 @@ separate owners.
 | [index.html](src/index.html), [public/](public/)                                                                                                         | Browser HTML shell, fonts/icon stylesheets, and static assets.                                                                                                        |
 
 The root shell and routed book pages use separate HTML files. Small presentation components keep inline templates.
-Templates use `@if`, `@switch`, and `@for` with stable book IDs. The small shared presentation components use
-`OnPush`; pages subscribe to request state once through the async pipe.
+Templates use `@if`, `@switch`, and `@for` with stable book IDs. All production components use `OnPush` and the default
+standalone behavior. Component contracts use `input()`/`output()`; local UI state uses signals and computed values.
+Pages subscribe to composed request state once through the async pipe, retaining RxJS cancellation and query timing.
+
+The modernization follows the installed Angular CLI 20.2.0 MCP server's `get_best_practices` guide, retrieved directly
+over stdio. [Cursor MCP configuration](.cursor/mcp.json) exposes the CLI server for editor sessions. No Angular upgrade
+or dependency changes were needed. The production build's initial bundle decreased from 445.74 kB to 307.44 kB through
+lazy component routes and removal of the unused animation provider. Route-specific chunks load when needed; these
+figures describe the initial build budget rather than the total bytes fetched during a visit.
 
 The standalone [book review example](src/components/book-review-example.component.ts) is an intentionally flawed fixture
 for pull-request code-review exercises. It lives under the requested `src/components/` path and is not part of the routed
@@ -149,6 +158,10 @@ between stars. The native selector provides an alternative to small visual targe
 decorative glows do not intercept the interactive hit area. New matching data or grouping resets the overview and keeps
 the selected book where still present. Map state and display selection are local to the page, not persisted preferences.
 
+The map's required book input is a signal. `linkedSignal` preserves a selected ID while it remains in the matches,
+chooses the first match when necessary, and resets the writable camera when matching books or grouping change. The
+shared cover uses the same source-linked pattern to clear failure state for a new image URL.
+
 Loading, retry/error, and empty feedback remain owned by the collection page in either display. The map adapts its
 preview below the canvas on narrow screens; the star field intentionally keeps its dark astronomical palette in both
 application themes. Outside the chart, controls and preview use the existing semantic theme styles.
@@ -172,6 +185,11 @@ supplies the base records, so browser-local changes do not imply offline catalog
 override and returns to details; Cancel leaves stored data unchanged. Title must be nonblank and page count a positive
 whole number. Editable fields are title, subtitle, author, publisher, ISBN, page count, formatted price, cover URL, and
 description. Book ID and user ID are not edited; changing the displayed ISBN does not change routing identity.
+
+The editor and collection filters use typed reactive `FormGroup` controls. `ngOnChanges` copies new editor input into
+the form; submit validates the complete draft before emitting trimmed metadata. Filter input changes synchronize
+without re-emitting, while user changes emit through a subscription owned by `takeUntilDestroyed`. Search and native
+reading-status/map selectors use direct value/event bindings. No production template uses `ngModel`.
 
 The API URL is injected through `BOOK_API_URL`, defaulting to `http://localhost:4730/books`. Single-book IDs are
 URL-encoded, and trailing slashes are normalized. All catalogue requests are GETs. Direct detail/editor links and refreshes
@@ -268,7 +286,8 @@ responses, and captured application error reports. They do not require a running
   system defaults, narrow screens, and blocked storage.
 - [universe.spec.ts](tests/universe.spec.ts): display tabs and keyboard focus, preserved query/personal views, 250 matching
   stars before gallery limits, no extra catalogue requests, preview/details navigation, zoom/drag/Fit, keyboard star
-  navigation, grouping, loading/error/retry/empty feedback, and 320px layouts in both themes.
+  navigation, grouping, cover recovery and selection/camera updates, loading/error/retry/empty feedback, and 320px layouts
+  in both themes.
 - [example.spec.ts](tests/example.spec.ts) and [tests-examples/](tests-examples/) remain external demonstration scaffolding.
   Karma still has no source specs or directly declared Karma/Jasmine dependencies.
 

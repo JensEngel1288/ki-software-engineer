@@ -6,9 +6,16 @@ Use [ARCHITECTURE.md](../ARCHITECTURE.md) for the full technical context and
 
 ## Angular structure
 
-- Use standalone components with explicit template imports. Bootstrap lives in [main.ts](main.ts), application providers
-  in [app/app.config.ts](app/app.config.ts), and routes in [app/app.routes.ts](app/app.routes.ts). Keep the wildcard route
-  last.
+- Use standalone components with explicit template imports and `ChangeDetectionStrategy.OnPush`. Standalone is the
+  Angular 20 default; omit redundant `standalone: true`. Bootstrap lives in [main.ts](main.ts), application providers
+  in [app/app.config.ts](app/app.config.ts), and lazy component routes in [app/app.routes.ts](app/app.routes.ts). Keep
+  the wildcard route last.
+- Use `input()` and `output()` for component contracts, signals for synchronous local state, and `computed()` for
+  derived values. Use `linkedSignal()` when writable state must reset with a source input, such as cover failure or
+  map selection/camera state. Keep request/query observables where cancellation and timing matter.
+- Prefer typed reactive forms for editable drafts and multi-field filters. Synchronize input changes explicitly through
+  lifecycle hooks without emitting feedback loops. Native single-action controls may bind values and events directly.
+  Inject services with `inject()`; keep constructor/field initialization free of external side effects.
 - Preserve strict TypeScript and Angular template checking. Reuse typed models and avoid introducing `any`.
 - Keep feature code inside its feature directory and put reusable, cross-feature services in `app/shared/`.
 - Keep the larger routed book pages and root shell in separate HTML files. Small presentation components may use inline

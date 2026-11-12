@@ -1,47 +1,60 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, input, OnChanges, output } from '@angular/core';
+import {
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators
+} from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Book } from './book';
 import { BookEdits } from './book-library';
 
+function positivePageCount(control: AbstractControl<number | null>): ValidationErrors | null {
+  const value = control.value;
+  return value !== null && Number.isInteger(value) && value > 0 ? null : { positivePageCount: true };
+}
+
 @Component({
   selector: 'app-book-edit-form',
-  imports: [FormsModule, RouterLink],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './book-edit-form.component.html'
 })
-export class BookEditFormComponent {
-  @Input({ required: true }) set book(value: Book) {
-    this.id = value.id;
-    this.model = {
-      title: value.title,
-      subtitle: value.subtitle ?? '',
-      author: value.author,
-      publisher: value.publisher,
-      isbn: value.isbn,
-      numPages: value.numPages,
-      price: value.price,
-      cover: value.cover,
-      abstract: value.abstract
-    };
+export class BookEditFormComponent implements OnChanges {
+  readonly book = input.required<Book>();
+  readonly save = output<BookEdits>();
+  protected readonly form = new FormGroup({
+    title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/)] }),
+    subtitle: new FormControl('', { nonNullable: true }),
+    author: new FormControl('', { nonNullable: true }),
+    publisher: new FormControl('', { nonNullable: true }),
+    isbn: new FormControl('', { nonNullable: true }),
+    numPages: new FormControl<number | null>(null, [Validators.required, positivePageCount]),
+    price: new FormControl('', { nonNullable: true }),
+    cover: new FormControl('', { nonNullable: true }),
+    abstract: new FormControl('', { nonNullable: true })
+  });
+
+  ngOnChanges(): void {
+    const { title, subtitle = '', author, publisher, isbn, numPages, price, cover, abstract } = this.book();
+    this.form.reset({ title, subtitle, author, publisher, isbn, numPages, price, cover, abstract });
   }
-  @Output() save = new EventEmitter<BookEdits>();
-  protected id = '';
-  protected model!: BookEdits;
-  protected get validPages(): boolean {
-    return Number.isInteger(this.model.numPages) && this.model.numPages > 0;
-  }
+
   protected submit(): void {
-    if (!this.model.title.trim() || !this.validPages) return;
+    const { numPages, ...values } = this.form.getRawValue();
+    if (this.form.invalid || numPages === null) return;
     this.save.emit({
-      ...this.model,
-      title: this.model.title.trim(),
-      subtitle: this.model.subtitle?.trim(),
-      author: this.model.author.trim(),
-      publisher: this.model.publisher.trim(),
-      isbn: this.model.isbn.trim(),
-      price: this.model.price.trim(),
-      cover: this.model.cover.trim(),
-      abstract: this.model.abstract.trim()
+      numPages,
+      title: values.title.trim(),
+      subtitle: values.subtitle.trim(),
+      author: values.author.trim(),
+      publisher: values.publisher.trim(),
+      isbn: values.isbn.trim(),
+      price: values.price.trim(),
+      cover: values.cover.trim(),
+      abstract: values.abstract.trim()
     });
   }
 }

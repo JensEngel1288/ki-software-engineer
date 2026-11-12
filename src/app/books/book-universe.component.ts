@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, Input, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Book } from './book';
 import { BookCoverComponent } from './book-cover.component';
@@ -15,21 +14,28 @@ const overview = (): MapCamera => ({ x: universeSize.width / 2, y: universeSize.
 
 @Component({
   selector: 'app-book-universe',
-  imports: [FormsModule, RouterLink, BookCoverComponent],
+  imports: [RouterLink, BookCoverComponent],
   templateUrl: './book-universe.component.html',
   styleUrl: './book-universe.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BookUniverseComponent {
-  private readonly booksState = signal<Book[]>([]);
-  private readonly selectedId = signal<string | null>(null);
+  readonly books = input.required<Book[]>();
+  private readonly selectedId = linkedSignal<Book[], string | null>({
+    source: this.books,
+    computation: (books, previous) => {
+      const selected = previous?.value ?? null;
+      return books.some(book => book.id === selected) ? selected : (books[0]?.id ?? null);
+    }
+  });
   protected readonly grouping = signal<UniverseGrouping>('publisher');
-  protected readonly camera = signal<MapCamera>(overview());
+  protected readonly camera = linkedSignal({
+    source: () => ({ books: this.books(), grouping: this.grouping() }),
+    computation: () => overview()
+  });
   protected readonly dragging = signal(false);
-  protected readonly layout = computed(() => layoutBookUniverse(this.booksState(), this.grouping()));
-  protected readonly selectedBook = computed(
-    () => this.booksState().find(book => book.id === this.selectedId()) ?? null
-  );
+  protected readonly layout = computed(() => layoutBookUniverse(this.books(), this.grouping()));
+  protected readonly selectedBook = computed(() => this.books().find(book => book.id === this.selectedId()) ?? null);
   protected readonly zoomPercent = computed(() => Math.round(this.camera().zoom * 100));
   protected readonly viewBox = computed(() => {
     const { x, y, zoom } = this.camera();
@@ -38,12 +44,6 @@ export class BookUniverseComponent {
     return `${x - width / 2} ${y - height / 2} ${width} ${height}`;
   });
   private drag: { pointerId: number; x: number; y: number; camera: MapCamera; units: number } | null = null;
-
-  @Input({ required: true }) set books(value: Book[]) {
-    this.booksState.set(value);
-    if (!value.some(book => book.id === this.selectedId())) this.selectedId.set(value[0]?.id ?? null);
-    this.fitAll();
-  }
 
   protected selectBook(id: string): void {
     this.selectedId.set(id);
@@ -55,7 +55,8 @@ export class BookUniverseComponent {
     if (star) this.camera.set({ x: star.x, y: star.y, zoom: 2 });
   }
 
-  protected changeGrouping(grouping: UniverseGrouping): void {
+  protected changeGrouping(grouping: string): void {
+    if (grouping !== 'publisher' && grouping !== 'author') return;
     this.grouping.set(grouping);
     this.fitAll();
   }
