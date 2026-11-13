@@ -1,109 +1,117 @@
-# Upgrade workspace Angular CLI to 21
+# Monthly reading recommendation
 
-Task status: completed — verified workspace CLI 21 upgrade
-Source: user request on 2026-11-13: update angular cli to 21.
-Previous task: [completed 3D Universe](universe-3d-completed.md).
+Task status: completed — verified local recommendation feature
+Source: user request on 2026-11-13 with a book/star recommendation tile and monthly
+book feature screenshot. Confirmed: feature a book from the current collection.
+Previous delivery: [Signal Forms migration](signal-forms-completed.md).
 
-Upgrade the project's local CLI from 20.2.0 to the latest stable 21.x patch.
-The official builder requires Angular 21 peers, so align framework/compiler/build,
-Material/CDK, and affected NgRx/toolkit dependencies through their migrations.
-Existing Node 24, TypeScript 5.9, RxJS 7.8, and application behavior are retained
-where compatible. This does not authorize a new unit-test framework, zoneless
-conversion, application redesign, global CLI install, commit, or publication.
+As a reader, I want a recommendation shortcut on the home page that opens a
+featured book from my collection, styled consistently with BookMonkey.
 
-## Acceptance
+Use the screenshots for the book/star motif and cover-plus-editorial layout.
+Adapt them to the existing blue accent, rounded surfaces, English UI, and themes.
+Use actual book fields and existing save/status/detail actions. No invented
+ratings/reviews/formats, external retailer data, checkout, or new dependency.
 
-- U21.1: Given the workspace, when its local CLI reports its version, then the
-  resolved CLI is major 21 and npm scripts use that CLI.
-- U21.2: Given the upgraded dependencies, when npm checks the installed tree,
-  then framework/builder/compiler and required peers are compatible without
-  force/legacy-peer-deps overrides. The npm lockfile matches the manifest.
-- U21.3: Given the upgraded toolchain, when production and custom MCP builds run,
-  then both compile successfully with strict checks and existing budgets.
-- U21.4: Given the upgraded development server, when the existing application
-  suites run, then all 57 Chromium cases pass without weakened tests or stale
-  Angular 20 server reuse. Preserve book data/storage, 3D controls, and Zone.js.
-- U21.5: Given editor/tool documentation, then the Angular CLI MCP configuration
-  resolves major 21 and technical guidance reflects the installed versions.
+Delivery choices: a native recommendation link styled as a tile, a lazy
+`/recommendation` route, and a deterministic monthly pick from all merged local/
+API records (stable IDs sorted, month index modulo book count). The pick is
+independent of gallery pages, filters, and API order; local edits are applied.
+The month uses the browser's local calendar. The route loads the catalogue only
+on opening/retry; the home shortcut needs no additional request.
 
-## Method and baseline
+## Acceptance and mapping (tests/book-list.spec.ts)
 
-Use [Angular's ng update guidance](https://angular.dev/cli/update) and npm peer
-metadata. Node 24.22.1 / TypeScript 5.9.2 meet Angular 21's
-[compatibility requirements](https://angular.dev/reference/versions).
-The initial tree is clean. CLI/build/CDK are 20.2.0 and framework/compiler 20.2.1.
-This migration uses existing behavior tests and actual version/dependency/build
-checks; do not add tests that merely mirror a package version declaration.
-No GitHub issue was supplied.
+- REC1: Given home, when the book/star tile is activated by keyboard, then the
+  monthly view opens with real cover/title/author/metadata/price/description and
+  a stable details link; Back to books returns home.
+- REC2: Given hidden/filtered and locally edited books, when opening/reloading the
+  recommendation with API records reordered, then the month's ID remains stable,
+  the pick uses the full collection, and edited metadata is shown. A calendar
+  change advances the pick according to the stated monthly selection rule.
+- REC3: Given an empty API and a browser-created book, then it can be recommended,
+  reloaded, and opened through its local details route with appropriate fallbacks.
+- REC4: Given a catalogue failure or empty collection, then retry/error/empty UI
+  is usable and Add book remains reachable.
+- REC5: Given a delayed catalogue response, then loading feedback appears and
+  resolves to the featured book.
+- REC6: Given 320px light/dark mode, then the tile and feature fit, cover/description
+  fallbacks work, save/status actions persist across reload, and no API writes occur.
 
-## Implementation and migration evidence
+Baseline: the immediately preceding valid working tree passed 59 Chromium cases
+and the strict build. Preserve all pending Signal Forms work. Add the new cases
+to the existing CI-selected list suite, verify Red before production, implement,
+review screenshots, and run the complete application/build/formatting checks.
+No issue, commit, push, or deployment was requested.
 
-Baseline: production build passed (321.55 kB initial); all 57 application Chromium
-cases passed (53.6 seconds). The old verified workspace dev-server process was
-stopped before installation, preventing stale-server reuse and Windows file locks.
+## Red/Green and delivery evidence
 
-The official update selected CLI/build/SSR 21.2.30, framework/compiler 21.2.26,
-Material/CDK 21.2.14, NgRx signals 21.1.1, and toolkit 21.0.1. CLI, core, CDK,
-Material, and NgRx required migrations all completed, reporting no source changes.
-The existing application-builder/control-flow setup already satisfies the relevant
-migrations. No optional redesign or forced peer overrides were used.
+All seven new cases were discovered and failed before source changes, for the
+absent shortcut/route/view. The app and fixtures ran and structured runner errors
+were empty. The five-second Red timeout was only for detecting missing behavior;
+Green/final runs used normal timeouts and no retries/skips were added.
 
-Only package manifests/lockfile, CLI MCP config, and project/context documentation
-changed. Source application code, tests, test configuration, compiler/build config,
-Zone.js setup, and unrelated workshop dependencies were preserved. The editor's
-CLI MCP command now requests `@angular/cli@21`. Global CLI installation was outside
-this workspace request.
+Implementation adds one route component with adjacent HTML, one pure selection
+helper, and the home tile. It reuses shared cover/feedback/personal controls and
+the existing collection projection. No source form code, package, lockfile, or
+test configuration from the preceding delivery was replaced. Existing assertions
+remain intact; seven cases were added to the existing CI-selected list suite.
+
+The icon test's broad SVG locator was narrowed to the first SVG because the tile
+contains the main book/star icon plus the reference's chevron. Its icon visibility
+assertion remains. All seven focused cases then passed (7.3 seconds).
+
+The complete application run passed all 66 cases (58.4 seconds), zero failed,
+skipped, or flaky, exit 0, structured errors empty. After that run, REC2 gained
+calendar-rollover assertions and passed again (2.6 seconds). The other 65 cases
+and application source were unchanged, so that passing full-suite evidence remains
+valid. Production build passed without budget warnings: 340.04 kB initial and
+7.06 kB lazy recommendation chunk.
 
 ## Acceptance reconciliation
 
-| Criterion | Evidence                                                                                                                                       | Result   |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| U21.1     | `npm run ng -- version`: CLI 21.2.30, Angular 21.2.26, npm 11.21.1, Node 24.22.1                                                               | Verified |
-| U21.2     | `npm ls --all --json` exits 0 with no problems; manifest/lock root dependency maps match exactly                                               | Verified |
-| U21.3     | Production build and `build.angular-mcp` pass; unchanged budgets, initial bundle 332.36 kB                                                     | Verified |
-| U21.4     | New Angular 21 server; all 57 Chromium cases pass; live browser confirms `ng-version` 21.x and 250 API books                                   | Verified |
-| U21.5     | CLI MCP pinned to major 21; existing custom MCP handshake, discovery, isolated generation, Windows paths, validation/errors pass; docs updated | Verified |
+| Criterion | Evidence                                                                                                            | Result   |
+| --------- | ------------------------------------------------------------------------------------------------------------------- | -------- |
+| REC1      | Native SVG tile/RouterLink, keyboard activation, real feature fields, details/back links; REC1 UI case              | Verified |
+| REC2      | Pure ID/month selection over full merged records; edits/order/search and November→December checks in REC2           | Verified |
+| REC3      | UI-created local record with empty API, reload, local detail route, price/description fallbacks; REC3               | Verified |
+| REC4      | Page-owned retry/error/empty UI and Add book route; REC4                                                            | Verified |
+| REC5      | Loading feedback and async catalogue resolution; REC5                                                               | Verified |
+| REC6      | Both 320px themes, fallbacks, saved/status persistence, read-only HTTP checks; two REC6 cases plus live screenshots | Verified |
 
-## Commands and final verification
+## Commands and verification limits
 
 ```powershell
-# Official migrations; allow-dirty permits only this task's checkpoint changes
-node node_modules/@angular/cli/bin/ng.js update @angular/cli@21 @angular/core@21 @angular/material@21 @ngrx/signals@21 @angular-architects/ngrx-toolkit@21 --allow-dirty
+# Red: seven discovered / seven missing-feature failures
+node node_modules/@playwright/test/cli.js test tests/book-list.spec.ts --grep "\[REC" --config=tmp/playwright.universe.config.ts --project=chromium --workers=1 --timeout=5000
 
-npm run ng -- version
-npm ls --all --json
-npm run build
-npm run build.angular-mcp
-node tmp/check-angular-mcp.cjs
+# Focused Green: seven passed
+node node_modules/@playwright/test/cli.js test tests/book-list.spec.ts --grep "\[REC" --config=tmp/playwright.universe.config.ts --project=chromium --workers=1
 
-# Restarted with the upgraded local CLI
-npm start
-
-# Baseline and final complete application scope
+# Full application: 66 passed
 node node_modules/@playwright/test/cli.js test tests/book-details.spec.ts tests/book-list.spec.ts tests/error-handling.spec.ts tests/theme.spec.ts tests/library.spec.ts tests/universe.spec.ts --config=tmp/playwright.universe.config.ts --project=chromium --workers=1
 
-# Separate live API check, including root ng-version 21.x
-node tmp/check-live-catalogue.cjs
+# Final extended month-rollover case: one passed
+node node_modules/@playwright/test/cli.js test tests/book-list.spec.ts --grep "\[REC2\]" --config=tmp/playwright.universe.config.ts --project=chromium --workers=1
+
+npm run build
+node tmp/preview-recommendation.cjs
 ```
 
-Final browser result: 57 discovered/passed, zero failed/skipped/flaky, exit 0,
-structured report errors empty (50.3 seconds). Baseline/final case counts and
-assertions are unchanged. The production build has no budget warnings. MCP
-compilation and real component-generation checks pass. The new development server
-is left running at http://localhost:4200 with the separate local API available.
+The temporary browser override uses the locally installed Chromium executable;
+committed configuration is portable. Application cases use intercepted API/cover
+fixtures; separate live visual checks captured the home tile and featured
+Programming the Mobile Web from the 250-book catalogue, at desktop and 320px in
+both themes, with no horizontal overflow. The chosen title is catalogue/month
+dependent, not hardcoded. Covers/descriptions are actual source data.
 
-The complete npm tree and matching lockfile are recorded in ignored
-`tmp/angular21-dependencies.json`; baseline/final structured browser reports are
-`tmp/angular21-baseline-results.json` and `tmp/angular21-final-results.json`.
-The temporary runner selects an installed Chromium binary; committed Playwright
-configuration contains no machine-specific executable path.
+Ignored session evidence: `tmp/recommendation-{red,focused,final}-results.json`,
+`tmp/recommendation-desktop.png`, `tmp/recommendation-home-desktop.png`, and
+`tmp/recommendation-{home-,}mobile-{light,dark}.png`. Final calendar evidence is
+recorded separately. Firefox/WebKit and the incomplete Karma/Jasmine scaffold
+were not run. The pre-existing console reporter diagnostic `step id not found:
+fixture@72` does not appear in structured errors and did not fail any case.
 
-Verification limits: Firefox/WebKit and the incomplete Karma/Jasmine scaffold
-were not run. Application suites mock API/cover responses; the separate live
-browser check verified 250 real books and ten visible cards without API failures.
-The pre-existing Playwright console diagnostic `step id not found: fixture@72`
-occurred in both baseline/final; structured errors are empty and all cases pass.
-
-Delivery is verified local working-tree changes. No GitHub issue, commit, push,
-PR, or deployment was requested. Final documentation checks cover changed-file
-Prettier, relative links, and `git diff --check`.
+Delivery is working-tree changes, including preserved pending Signal Forms work.
+No GitHub issue or remote publication applies. Final checks: touched-file Prettier,
+relative Markdown links, source/route review, and `git diff --check`.

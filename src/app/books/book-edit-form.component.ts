@@ -1,25 +1,15 @@
-import { ChangeDetectionStrategy, Component, input, OnChanges, output, SimpleChanges } from '@angular/core';
-import {
-  AbstractControl,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  ValidationErrors,
-  Validators
-} from '@angular/forms';
+import { ChangeDetectionStrategy, Component, input, OnChanges, output, signal, SimpleChanges } from '@angular/core';
+import { form, FormField, FormRoot, min, pattern, required, validate } from '@angular/forms/signals';
 import { RouterLink } from '@angular/router';
 import { Book } from './book';
 import { BookEdits } from './book-library';
 
-function positivePageCount(control: AbstractControl<number | null>): ValidationErrors | null {
-  const value = control.value;
-  return value !== null && Number.isInteger(value) && value > 0 ? null : { positivePageCount: true };
-}
+type BookDraft = Omit<BookEdits, 'subtitle' | 'numPages'> & { subtitle: string; numPages: number | null };
 
 @Component({
   selector: 'app-book-edit-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [FormField, FormRoot, RouterLink],
   templateUrl: './book-edit-form.component.html'
 })
 export class BookEditFormComponent implements OnChanges {
@@ -27,27 +17,40 @@ export class BookEditFormComponent implements OnChanges {
   readonly save = output<BookEdits>();
   readonly submitLabel = input('Save changes');
   readonly cancelLink = input<string[] | null>(null);
-  protected readonly form = new FormGroup({
-    title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/)] }),
-    subtitle: new FormControl('', { nonNullable: true }),
-    author: new FormControl('', { nonNullable: true }),
-    publisher: new FormControl('', { nonNullable: true }),
-    isbn: new FormControl('', { nonNullable: true }),
-    numPages: new FormControl<number | null>(null, [Validators.required, positivePageCount]),
-    price: new FormControl('', { nonNullable: true }),
-    cover: new FormControl('', { nonNullable: true }),
-    abstract: new FormControl('', { nonNullable: true })
+  private readonly draft = signal<BookDraft>({
+    title: '',
+    subtitle: '',
+    author: '',
+    publisher: '',
+    isbn: '',
+    numPages: null,
+    price: '',
+    cover: '',
+    abstract: ''
   });
+  protected readonly form = form(
+    this.draft,
+    schema => {
+      required(schema.title);
+      pattern(schema.title, /\S/);
+      required(schema.numPages);
+      min(schema.numPages, 1);
+      validate(schema.numPages, ({ value }) =>
+        value() !== null && !Number.isInteger(value()) ? { kind: 'wholePageCount' } : null
+      );
+    },
+    { submission: { action: async () => this.submit() } }
+  );
 
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes['book']) return;
     const { title, subtitle = '', author, publisher, isbn, numPages, price, cover, abstract } = this.book();
-    this.form.reset({ title, subtitle, author, publisher, isbn, numPages, price, cover, abstract });
+    this.form().reset({ title, subtitle, author, publisher, isbn, numPages, price, cover, abstract });
   }
 
   protected submit(): void {
-    const { numPages, ...values } = this.form.getRawValue();
-    if (this.form.invalid || numPages === null) return;
+    const { numPages, ...values } = this.draft();
+    if (this.form().invalid() || numPages === null) return;
     this.save.emit({
       numPages,
       title: values.title.trim(),

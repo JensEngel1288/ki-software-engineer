@@ -1,55 +1,43 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  DestroyRef,
-  inject,
-  input,
-  OnChanges,
-  OnInit,
-  output
-} from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { BookFilters, BookSort, defaultFilters } from './book-collection';
-import { ReadingStatus } from './book-library';
+import { ChangeDetectionStrategy, Component, computed, input, OnChanges, output, signal } from '@angular/core';
+import { form, FormField, min, validate } from '@angular/forms/signals';
+import { BookFilters, defaultFilters } from './book-collection';
 
 @Component({
   selector: 'app-book-filters',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule],
+  imports: [FormField],
   templateUrl: './book-filters.component.html'
 })
-export class BookFiltersComponent implements OnChanges, OnInit {
+export class BookFiltersComponent implements OnChanges {
   readonly filters = input.required<BookFilters>();
   readonly allowSorting = input(true);
   readonly filtersChange = output<BookFilters>();
-  private readonly destroyRef = inject(DestroyRef);
-  protected readonly form = new FormGroup({
-    author: new FormControl('', { nonNullable: true }),
-    publisher: new FormControl('', { nonNullable: true }),
-    minPages: new FormControl<number | null>(null),
-    maxPages: new FormControl<number | null>(null),
-    sort: new FormControl<BookSort>('default', { nonNullable: true }),
-    readingStatus: new FormControl<ReadingStatus | ''>('', { nonNullable: true })
+  private readonly model = signal<BookFilters>({ ...defaultFilters });
+  protected readonly form = form(this.model, schema => {
+    min(schema.minPages, 0);
+    min(schema.maxPages, 0);
+    validate(schema, ({ value }) => {
+      const { minPages, maxPages } = value();
+      return minPages !== null && maxPages !== null && minPages > maxPages ? { kind: 'pageRange' } : null;
+    });
   });
-  protected readonly invalidRange = computed(() => {
-    const { minPages, maxPages } = this.filters();
-    return minPages !== null && maxPages !== null && minPages > maxPages;
-  });
+  protected readonly invalidRange = computed(() =>
+    this.form()
+      .errors()
+      .some(error => error.kind === 'pageRange')
+  );
 
   ngOnChanges(): void {
     const { author, publisher, minPages, maxPages, sort, readingStatus } = this.filters();
-    this.form.setValue({ author, publisher, minPages, maxPages, sort, readingStatus }, { emitEvent: false });
+    this.form().reset({ author, publisher, minPages, maxPages, sort, readingStatus });
   }
 
-  ngOnInit(): void {
-    this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      this.filtersChange.emit(this.form.getRawValue());
-    });
+  protected emitFilters(): void {
+    this.filtersChange.emit({ ...this.model() });
   }
 
   protected clear(): void {
-    this.form.reset(defaultFilters);
+    this.form().reset({ ...defaultFilters });
+    this.emitFilters();
   }
 }

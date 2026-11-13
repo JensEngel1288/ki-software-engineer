@@ -105,6 +105,29 @@ test('cancel discards the editing draft and validation rejects empty titles or i
   await expect(page.getByRole('heading', { name: 'Unsaved draft', exact: true })).toHaveCount(0);
 });
 
+test('[SF2] editor shows touched errors and saves a valid trimmed draft with Enter', async ({ page }) => {
+  await page.goto(appUrl + '/books/' + book.id + '/edit');
+  const title = page.getByLabel('Title', { exact: true });
+  const pages = page.getByLabel(/^Page count/);
+  const save = page.getByRole('button', { name: 'Save changes', exact: true });
+  await title.fill('   ');
+  await title.blur();
+  await expect(page.getByText('Enter a book title.', { exact: true })).toBeVisible();
+  await expect(save).toBeDisabled();
+  await title.fill('  Keyboard entry  ');
+  await pages.fill('');
+  await pages.blur();
+  await expect(page.getByText('Enter a whole number greater than zero.', { exact: true })).toBeVisible();
+  await expect(save).toBeDisabled();
+  await pages.fill('84');
+  await expect(save).toBeEnabled();
+  await title.press('Enter');
+  await expect(page).toHaveURL(appUrl + '/books/' + book.id);
+  await expect(page.getByRole('article').getByRole('heading', { name: 'Keyboard entry', exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('article')).toContainText('Keyboard entry');
+});
+
 test('an edit route has a not-found state and direct reload keeps the form usable', async ({ page }) => {
   await page.goto(appUrl + '/books/missing/edit');
   await expect(page.getByRole('heading', { name: 'Book not found' })).toBeVisible();

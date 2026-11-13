@@ -73,6 +73,10 @@ Use ordinary typed functions and existing services when they express the boundar
 - Reuse the validated editor fields for creation/editing with focused action inputs. Keep ID generation and persistence
   in the library service. Board columns share that service's statuses and ordering; filtered drag operations use stable
   ID anchors rather than treating visible indices as the full stored order.
+- Project forms use `@angular/forms/signals`: typed model signals, schema validators, `FormField`, and `FormRoot` for
+  submission. Let field directives own names/validation attributes; legacy `name` attributes on `[formField]` fail
+  Angular 21's compiler. Reset field state when inputs change and keep synchronization silent. Characterize empty numeric
+  fields, touched errors, Enter submission, cancel, and filter reset before changing these boundaries.
 - Evaluate heavy optional interactions against build output. Defer the standalone reading board inside its selected-tab
   branch so CDK loads when needed; preserve loading/error feedback and test the real tab and drag interactions.
 

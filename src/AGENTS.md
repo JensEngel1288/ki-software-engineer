@@ -13,8 +13,9 @@ Use [ARCHITECTURE.md](../ARCHITECTURE.md) for the full technical context and
 - Use `input()` and `output()` for component contracts, signals for synchronous local state, and `computed()` for
   derived values. Use `linkedSignal()` when writable state must reset with a source input, such as cover failure or
   map selection/camera state. Keep request/query observables where cancellation and timing matter.
-- Prefer typed reactive forms for editable drafts and multi-field filters. Synchronize input changes explicitly through
-  lifecycle hooks without emitting feedback loops. Native single-action controls may bind values and events directly.
+- Use Signal Forms from `@angular/forms/signals` for editable drafts and multi-field filters: typed signal models,
+  `form()`, schema validation, and `[formField]` bindings. Use `FormRoot` for submission. Synchronize changed inputs with
+  field-state `reset()` without output feedback loops. Native single-action controls may bind values/events directly.
   Inject services with `inject()`; keep constructor/field initialization free of external side effects.
 - Preserve strict TypeScript and Angular template checking. Reuse typed models and avoid introducing `any`.
 - Keep feature code inside its feature directory and put reusable, cross-feature services in `app/shared/`.

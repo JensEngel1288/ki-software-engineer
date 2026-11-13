@@ -386,5 +386,48 @@ cases. The verified old development server was stopped before installation and
 a new Angular 21 server started for the final run. Production and MCP builds,
 component generation, live 250-book loading, and the complete npm dependency-tree
 check passed. The final initial bundle is 332.36 kB within the unchanged budgets.
-The CLI MCP configuration pins major 21. [Upgrade evidence](.cursor/context/current-requirement.md)
+The CLI MCP configuration pins major 21. [Upgrade evidence](.cursor/context/angular-cli21-completed.md)
 records scope, commands, versions, and verification limits.
+
+## Signal Forms migration — 2026-11-13
+
+The shared create/edit draft, collection filters, and review example now import
+only Signal Forms utilities from `@angular/forms/signals`. Typed signal models
+and `form()` replace the legacy form groups/controls. Editor schemas own required
+nonblank titles, positive whole pages, and touched/invalid feedback; `FormRoot`
+owns submission and duplicate guards. Field-state reset copies changed inputs
+without mutating incoming books. Native names/validation attributes are owned
+by the field directive rather than duplicated in templates.
+
+Filters use schema range validation and emit copied models from label-level
+native events after field updates. Parent input synchronization stays silent;
+reset emits once. The previous value-change subscription and teardown plumbing
+are removed. Numeric empty values retain null/unbounded semantics. The unrouted
+review example's other exercise behavior remains unchanged.
+
+Two useful characterization cases passed before source edits: Enter submission
+with touched/cleared fields and clearing individual numeric filter bounds. The
+final six-suite run passes all 59 Chromium cases with existing assertions intact.
+The strict production build passes within unchanged budgets (336.64 kB initial).
+No dependencies or runner configuration changed. Project guidance and the
+refactoring skill reference record the Signal Forms pattern and native-attribute
+compiler constraints. [Migration evidence](.cursor/context/signal-forms-completed.md)
+records the requirement mapping and verification limits.
+
+## Monthly reading recommendation — 2026-11-13
+
+The screenshot-inspired book/star tile uses the existing blue accent, semantic
+surfaces, rounded corners, and native keyboard navigation. Its lazy recommendation
+route owns catalogue request feedback and composes the shared cover and personal
+controls. A pure selector reuses the full merged collection before sorting stable
+IDs and selecting by calendar month; filters, page limits, and API order do not
+control the monthly feature. Browser edits and created books participate normally.
+
+The cover/metadata/description composition uses actual collection data and shared
+fallbacks. Desktop and 320px light/dark screenshots were checked with the live
+catalogue. No extra home request, duplicate library state, external retailer data,
+or dependency was added. The recommendation chunk is 7.06 kB; build budgets remain
+unchanged. Seven new cases were verified Red, then Green. The complete regression
+run passed 66 Chromium cases, and a final extended REC2 check verified calendar
+rollover. [Feature evidence](.cursor/context/current-requirement.md) records exact
+commands and verification limits; prior pending Signal Forms work was preserved.

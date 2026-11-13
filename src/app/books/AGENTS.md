@@ -21,6 +21,10 @@ query lifecycle and error-reporting boundaries.
 - [book-item.component.ts](book-item.component.ts) presents its `Book` input and links the title to the details route.
   Keep it free of HTTP requests. Use [book-cover.component.ts](book-cover.component.ts) for both missing and broken covers;
   its image failure state resets when the source changes.
+- The home recommendation tile links to `/recommendation`. [book-recommendation.component.ts](book-recommendation.component.ts)
+  owns loading/retry/empty UI and shared cover/personal controls. [book-recommendation.ts](book-recommendation.ts) selects
+  a monthly pick from the whole merged collection using sorted IDs and the browser calendar. Keep it independent of
+  gallery filters/pages/API order; use real metadata and preserve browser-local edits and created records.
 - Production components use signal inputs/outputs and `OnPush`. Cover failure, map selection, and map camera reset
   through `linkedSignal` when their source data changes. Keep a selected book while it still matches; otherwise select
   the first match. Updated map data returns the camera to the overview.
@@ -38,9 +42,11 @@ query lifecycle and error-reporting boundaries.
   Preserve IDs, keep price as display text, and validate a nonblank title and positive whole-number page count.
 - [book-create.component.ts](book-create.component.ts) reuses that form. Keep new `local-` UUIDs distinct from ISBNs.
   Details/edit routes resolve created records from the library before making HTTP requests.
-- Editing and collection filters use typed reactive forms. Copy incoming editor data into the independent form in
-  `ngOnChanges`; changes to the draft must never mutate the input book. Filter input synchronization suppresses form
-  emissions; its user-change subscription uses `takeUntilDestroyed`. Clear resets all controls and emits once.
+- Editing and filters use Signal Forms with independent typed signal models. Reset incoming data in `ngOnChanges`;
+  draft changes must never mutate the input book. Editor schemas own required/nonblank titles and positive whole pages;
+  `FormRoot` handles validation/submission. Let `FormField` own control names and schema-derived native attributes.
+  Filters emit from label-level native events after field bindings update; programmatic synchronization stays silent.
+  Clear resets the form and emits once. Do not reintroduce `valueChanges` subscriptions or a second form-state copy.
 
 - [book-universe.component.ts](book-universe.component.ts) owns the home-page Universe display's SVG, preview, selection,
   and camera controls. [book-universe-layout.ts](book-universe-layout.ts) owns deterministic 3D world coordinates and
@@ -70,6 +76,7 @@ query lifecycle and error-reporting boundaries.
 - The collection is at `/`, creation at `/books/new` (before the dynamic ID route), details at `/books/:id`, and editing at `/books/:id/edit`, configured in
   [app.routes.ts](../app.routes.ts).
   Details must work on direct navigation and browser refresh without relying on previously loaded list data.
+- `/recommendation` is a lazy route and fetches the catalogue on entry/retry. The home shortcut performs no extra request.
 - Keep title links keyboard-accessible and provide a link back to the collection.
 
 ## Details behavior and validation
@@ -91,3 +98,5 @@ query lifecycle and error-reporting boundaries.
   Library checks cover persistence, recent ordering, local creation/editing without HTTP writes, cancel, validation,
   isolation, storage failures, board migration, real CDK dragging, and reordering/reload. List checks include numbered
   pagination, query resets, and clamping. Tests assert observable behavior, not obsolete per-search HTTP traffic.
+  List-suite recommendation cases cover keyboard entry, monthly stability/rollover, edits/local books, loading/retry/
+  empty states, details links, persisted actions, and narrow layouts in both themes.

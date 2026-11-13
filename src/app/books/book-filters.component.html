@@ -1,9 +1,9 @@
-<div [formGroup]="form" class="mb-6 rounded-xl border border-divider bg-surface p-4">
+<div class="mb-6 rounded-xl border border-divider bg-surface p-4">
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     @if (allowSorting()) {
-      <label class="grid gap-1 text-sm font-medium"
+      <label class="grid gap-1 text-sm font-medium" (change)="emitFilters()"
         >Sort books
-        <select formControlName="sort" class="form-control">
+        <select [formField]="form.sort" class="form-control">
           <option value="default">Default order</option>
           <option value="title-asc">Title: A–Z</option>
           <option value="title-desc">Title: Z–A</option>
@@ -12,25 +12,25 @@
         </select>
       </label>
     }
-    <label class="grid gap-1 text-sm font-medium"
+    <label class="grid gap-1 text-sm font-medium" (input)="emitFilters()"
       >Filter by author
-      <input type="text" formControlName="author" class="form-control" placeholder="Any author" />
+      <input type="text" [formField]="form.author" class="form-control" placeholder="Any author" />
     </label>
-    <label class="grid gap-1 text-sm font-medium"
+    <label class="grid gap-1 text-sm font-medium" (input)="emitFilters()"
       >Filter by publisher
-      <input type="text" formControlName="publisher" class="form-control" placeholder="Any publisher" />
+      <input type="text" [formField]="form.publisher" class="form-control" placeholder="Any publisher" />
     </label>
-    <label class="grid gap-1 text-sm font-medium"
+    <label class="grid gap-1 text-sm font-medium" (input)="emitFilters()"
       >Minimum pages
-      <input type="number" min="0" step="1" formControlName="minPages" class="form-control" placeholder="No minimum" />
+      <input type="number" step="1" [formField]="form.minPages" class="form-control" placeholder="No minimum" />
     </label>
-    <label class="grid gap-1 text-sm font-medium"
+    <label class="grid gap-1 text-sm font-medium" (input)="emitFilters()"
       >Maximum pages
-      <input type="number" min="0" step="1" formControlName="maxPages" class="form-control" placeholder="No maximum" />
+      <input type="number" step="1" [formField]="form.maxPages" class="form-control" placeholder="No maximum" />
     </label>
-    <label class="grid gap-1 text-sm font-medium"
+    <label class="grid gap-1 text-sm font-medium" (change)="emitFilters()"
       >Filter by reading status
-      <select formControlName="readingStatus" class="form-control">
+      <select [formField]="form.readingStatus" class="form-control">
         <option value="">Any status</option>
         <option value="want-to-read">Want to read</option>
         <option value="reading">Reading</option>

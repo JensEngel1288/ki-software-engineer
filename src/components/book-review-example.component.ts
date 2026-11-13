@@ -1,5 +1,5 @@
-import { Component, Input } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, Input, signal } from '@angular/core';
+import { form, FormField } from '@angular/forms/signals';
 import { Book } from '../app/books/book';
 
 // Intentionally flawed example for the pull-request review exercise.
@@ -7,13 +7,13 @@ import { Book } from '../app/books/book';
 @Component({
   selector: 'app-book-review-example',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormField],
   template: `
     <section class="rounded-xl border border-divider bg-surface p-5">
       <h2 class="mb-4 text-xl font-bold">Top 3 books</h2>
       <label class="grid gap-1 text-sm font-medium">
         Search titles
-        <input [(ngModel)]="searchTerm" class="form-control" placeholder="Search by title" />
+        <input [formField]="searchForm.searchTerm" class="form-control" placeholder="Search by title" />
       </label>
       <ul class="my-4 grid gap-3">
         @for (book of visibleBooks; track $index) {
@@ -30,7 +30,8 @@ import { Book } from '../app/books/book';
 })
 export class BookReviewExampleComponent {
   @Input() books: Book[] = [];
-  protected searchTerm = '';
+  private readonly searchModel = signal({ searchTerm: '' });
+  protected readonly searchForm = form(this.searchModel);
   protected secondsOpen = 0;
 
   constructor() {
@@ -40,7 +41,7 @@ export class BookReviewExampleComponent {
   protected get visibleBooks(): Book[] {
     return this.books
       .sort((a, b) => a.title.localeCompare(b.title))
-      .filter(book => book.title.includes(this.searchTerm))
+      .filter(book => book.title.includes(this.searchModel().searchTerm))
       .slice(0, 2);
   }
 

@@ -32,6 +32,10 @@ page. Open the **Reading list** tab to add books and drag them between **Want to
 **Currently reading**, and **Read**. Native status menus also move cards. Books, edits,
 reading statuses, and card order persist in this browser through localStorage.
 
+**Reading recommendation** opens the monthly book spotlight from the home page.
+It features a book from your full collection with its cover, description, price,
+details link, and the same save/reading-status controls.
+
 ## Code generation evaluation
 
 The evaluator lives in `web-codegen-scorer-playground`. From this repository root,

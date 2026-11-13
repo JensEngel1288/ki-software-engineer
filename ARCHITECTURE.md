@@ -12,7 +12,7 @@ Versions below are the declarations in [package.json](./package.json). [package-
 | ------------------------------------------------------------------------------------ | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@angular/core`, `@angular/common`, `@angular/compiler`, `@angular/platform-browser` | `21.2.26`             | Components, dependency injection, common template directives, template compilation, browser bootstrap, and `HttpClient` from `@angular/common/http`. |
 | `@angular/router`                                                                    | `21.2.26`             | Displays the book list and book details in the root router outlet and redirects unknown URLs to the home route.                                      |
-| `@angular/forms`                                                                     | `21.2.26`             | Typed reactive forms for collection filters and validated independent editing drafts. Single-action controls use native value/event bindings.        |
+| `@angular/forms`                                                                     | `21.2.26`             | Signal Forms for collection filters and validated independent creation/editing drafts. Single-action controls use native value/event bindings.       |
 | `rxjs`                                                                               | `7.8.0`               | Supplies typed API and view-state streams, cancels obsolete searches and route requests, and coordinates retries.                                    |
 | `zone.js`                                                                            | `0.15.0`              | Loaded as a polyfill; zone-based change detection is configured with event coalescing.                                                               |
 | `@angular/material`, `@angular/cdk`                                                  | `^21.2.14`, `21.2.14` | Material snackbar support in `ToastService` and CDK drag/drop for the reading board. The book screen does not call the toast service.                |
@@ -49,34 +49,35 @@ The application uses standalone components and application-level providers, with
 Routed pages own query/route state and compose small presentation components. HTTP, reporting, and theme effects have
 separate owners.
 
-| File or directory                                                                                                                                        | Responsibility                                                                                                                                               |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [src/main.ts](src/main.ts)                                                                                                                               | Bootstraps the app and reports bootstrap failures through the same deduplication function used at runtime.                                                   |
-| [app.config.ts](src/app/app.config.ts)                                                                                                                   | Routing, API URL, HTTP error infrastructure, zone change detection, and explicit theme/library initializers.                                                 |
-| [app.ts](src/app/app.ts), [app.html](src/app/app.html), [app.css](src/app/app.css)                                                                       | Root shell with the theme switch, unexpected-error notice, router outlet, and footer. The component class only injects services.                             |
-| [app.routes.ts](src/app/app.routes.ts)                                                                                                                   | Lazy collection, creation, details, and edit routes; `/books/new` precedes dynamic IDs and the wildcard redirect is last.                                    |
-| [book-list.component.ts](src/app/books/book-list.component.ts), [HTML](src/app/books/book-list.component.html)                                           | Loads the full catalogue, combines browser-local state and debounced queries, and composes Gallery, Universe, and Reading list displays.                     |
-| [book-details.component.ts](src/app/books/book-details.component.ts), [HTML](src/app/books/book-details.component.html)                                  | Loads a book by route ID, applies local edits, records successful views, and exposes saved/status controls.                                                  |
-| [book-item.component.ts](src/app/books/book-item.component.ts)                                                                                           | Presents a book, links to details/editing, and emits saved/status actions through shared personal controls.                                                  |
-| [book-cover.component.ts](src/app/books/book-cover.component.ts)                                                                                         | Shared card/detail cover rendering, missing/broken-image fallback, and local failure reset when the source changes.                                          |
-| [book-api-client.service.ts](src/app/books/book-api-client.service.ts), [book-api.config.ts](src/app/books/book-api.config.ts)                           | Read-only HTTP access to the full base catalogue and individual books using an injected API URL and expected-404 context.                                    |
-| [book.ts](src/app/books/book.ts), [request-state.ts](src/app/books/request-state.ts)                                                                     | Shared book model and discriminated loading/ready/error state; details extend the union with not-found.                                                      |
-| [book-library.service.ts](src/app/books/book-library.service.ts), [book-library.ts](src/app/books/book-library.ts)                                       | Startup validation and compatible loading of local books, edits, saved/status/recent state, and board order; command-based persistence with failure notices. |
-| [book-collection.ts](src/app/books/book-collection.ts)                                                                                                   | Pure projection: merge created records, apply edits, match/filter/view/sort the full collection, then clamp and slice the gallery page.                      |
-| [book-pagination.component.ts](src/app/books/book-pagination.component.ts)                                                                               | Previous/Next controls, page status, and native numbered-page selection.                                                                                     |
-| [book-reading-board.component.ts](src/app/books/book-reading-board.component.ts), [HTML](src/app/books/book-reading-board.component.html)                | Deferred board presentation, CDK drag/drop, native status controls, and ID-based move events; library service owns persisted state.                          |
-| [book-filters.component.ts](src/app/books/book-filters.component.ts), [HTML](src/app/books/book-filters.component.html)                                  | Controlled sorting/filter UI that emits changes and reports invalid page ranges.                                                                             |
-| [book-library-controls.component.ts](src/app/books/book-library-controls.component.ts)                                                                   | Reusable save/unsave and reading-status controls for cards and details.                                                                                      |
-| [book-edit.component.ts](src/app/books/book-edit.component.ts), [HTML](src/app/books/book-edit.component.html)                                           | Direct-linkable editor route; loads the original book, supplies local overrides, and saves changes through the library service.                              |
-| [book-create.component.ts](src/app/books/book-create.component.ts)                                                                                       | Browser-local creation through the shared validated form, followed by navigation to the new book's details.                                                  |
-| [book-edit-form.component.ts](src/app/books/book-edit-form.component.ts), [HTML](src/app/books/book-edit-form.component.html)                            | Shared independent creation/edit draft, title/page validation, configurable submit label/cancel route, and typed save output.                                |
-| [theme.service.ts](src/app/shared/theme.service.ts)                                                                                                      | Explicit, idempotent startup initialization; signal-backed theme state; document-root and storage updates on commands.                                       |
-| [http-error.interceptor.ts](src/app/shared/http-error.interceptor.ts)                                                                                    | Reports unexpected HTTP failures and rethrows the original error; suppresses reporting of explicitly expected 404 responses.                                 |
-| [global-error-handler.ts](src/app/shared/global-error-handler.ts), [error-reporter.service.ts](src/app/shared/error-reporter.service.ts)                 | Reports unhandled errors, deduplicates repeated error objects, and exposes a dismissible notice for unexpected runtime failures.                             |
-| [loading-indicator.component.ts](src/app/shared/loading-indicator.component.ts), [state-message.component.ts](src/app/shared/state-message.component.ts) | Shared request feedback with status/alert semantics, reduced-motion loading, projected headings, and page-owned action content.                              |
-| [toast.service.ts](src/app/shared/toast.service.ts)                                                                                                      | Existing Material snackbar wrapper, available for explicit notifications; request errors currently use inline page feedback.                                 |
-| [styles.css](src/styles.css), [material-theme.scss](src/material-theme.scss)                                                                             | Tailwind import, semantic light/dark palettes, common interaction styles, native color scheme, and matching snackbar color overrides.                        |
-| [index.html](src/index.html), [public/](public/)                                                                                                         | Browser HTML shell, fonts/icon stylesheets, and static assets.                                                                                               |
+| File or directory                                                                                                                                                                              | Responsibility                                                                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [src/main.ts](src/main.ts)                                                                                                                                                                     | Bootstraps the app and reports bootstrap failures through the same deduplication function used at runtime.                                                   |
+| [app.config.ts](src/app/app.config.ts)                                                                                                                                                         | Routing, API URL, HTTP error infrastructure, zone change detection, and explicit theme/library initializers.                                                 |
+| [app.ts](src/app/app.ts), [app.html](src/app/app.html), [app.css](src/app/app.css)                                                                                                             | Root shell with the theme switch, unexpected-error notice, router outlet, and footer. The component class only injects services.                             |
+| [app.routes.ts](src/app/app.routes.ts)                                                                                                                                                         | Lazy collection, recommendation, creation, details, and edit routes; `/books/new` precedes dynamic IDs and the wildcard redirect is last.                    |
+| [book-list.component.ts](src/app/books/book-list.component.ts), [HTML](src/app/books/book-list.component.html)                                                                                 | Loads the full catalogue, combines browser-local state and debounced queries, and composes Gallery, Universe, and Reading list displays.                     |
+| [book-details.component.ts](src/app/books/book-details.component.ts), [HTML](src/app/books/book-details.component.html)                                                                        | Loads a book by route ID, applies local edits, records successful views, and exposes saved/status controls.                                                  |
+| [book-recommendation.component.ts](src/app/books/book-recommendation.component.ts), [HTML](src/app/books/book-recommendation.component.html), [selector](src/app/books/book-recommendation.ts) | Monthly spotlight route with catalogue states, pure full-collection selection, shared cover/personal controls, and details navigation.                       |
+| [book-item.component.ts](src/app/books/book-item.component.ts)                                                                                                                                 | Presents a book, links to details/editing, and emits saved/status actions through shared personal controls.                                                  |
+| [book-cover.component.ts](src/app/books/book-cover.component.ts)                                                                                                                               | Shared card/detail cover rendering, missing/broken-image fallback, and local failure reset when the source changes.                                          |
+| [book-api-client.service.ts](src/app/books/book-api-client.service.ts), [book-api.config.ts](src/app/books/book-api.config.ts)                                                                 | Read-only HTTP access to the full base catalogue and individual books using an injected API URL and expected-404 context.                                    |
+| [book.ts](src/app/books/book.ts), [request-state.ts](src/app/books/request-state.ts)                                                                                                           | Shared book model and discriminated loading/ready/error state; details extend the union with not-found.                                                      |
+| [book-library.service.ts](src/app/books/book-library.service.ts), [book-library.ts](src/app/books/book-library.ts)                                                                             | Startup validation and compatible loading of local books, edits, saved/status/recent state, and board order; command-based persistence with failure notices. |
+| [book-collection.ts](src/app/books/book-collection.ts)                                                                                                                                         | Pure projection: merge created records, apply edits, match/filter/view/sort the full collection, then clamp and slice the gallery page.                      |
+| [book-pagination.component.ts](src/app/books/book-pagination.component.ts)                                                                                                                     | Previous/Next controls, page status, and native numbered-page selection.                                                                                     |
+| [book-reading-board.component.ts](src/app/books/book-reading-board.component.ts), [HTML](src/app/books/book-reading-board.component.html)                                                      | Deferred board presentation, CDK drag/drop, native status controls, and ID-based move events; library service owns persisted state.                          |
+| [book-filters.component.ts](src/app/books/book-filters.component.ts), [HTML](src/app/books/book-filters.component.html)                                                                        | Controlled sorting/filter UI that emits changes and reports invalid page ranges.                                                                             |
+| [book-library-controls.component.ts](src/app/books/book-library-controls.component.ts)                                                                                                         | Reusable save/unsave and reading-status controls for cards and details.                                                                                      |
+| [book-edit.component.ts](src/app/books/book-edit.component.ts), [HTML](src/app/books/book-edit.component.html)                                                                                 | Direct-linkable editor route; loads the original book, supplies local overrides, and saves changes through the library service.                              |
+| [book-create.component.ts](src/app/books/book-create.component.ts)                                                                                                                             | Browser-local creation through the shared validated form, followed by navigation to the new book's details.                                                  |
+| [book-edit-form.component.ts](src/app/books/book-edit-form.component.ts), [HTML](src/app/books/book-edit-form.component.html)                                                                  | Shared independent creation/edit draft, title/page validation, configurable submit label/cancel route, and typed save output.                                |
+| [theme.service.ts](src/app/shared/theme.service.ts)                                                                                                                                            | Explicit, idempotent startup initialization; signal-backed theme state; document-root and storage updates on commands.                                       |
+| [http-error.interceptor.ts](src/app/shared/http-error.interceptor.ts)                                                                                                                          | Reports unexpected HTTP failures and rethrows the original error; suppresses reporting of explicitly expected 404 responses.                                 |
+| [global-error-handler.ts](src/app/shared/global-error-handler.ts), [error-reporter.service.ts](src/app/shared/error-reporter.service.ts)                                                       | Reports unhandled errors, deduplicates repeated error objects, and exposes a dismissible notice for unexpected runtime failures.                             |
+| [loading-indicator.component.ts](src/app/shared/loading-indicator.component.ts), [state-message.component.ts](src/app/shared/state-message.component.ts)                                       | Shared request feedback with status/alert semantics, reduced-motion loading, projected headings, and page-owned action content.                              |
+| [toast.service.ts](src/app/shared/toast.service.ts)                                                                                                                                            | Existing Material snackbar wrapper, available for explicit notifications; request errors currently use inline page feedback.                                 |
+| [styles.css](src/styles.css), [material-theme.scss](src/material-theme.scss)                                                                                                                   | Tailwind import, semantic light/dark palettes, common interaction styles, native color scheme, and matching snackbar color overrides.                        |
+| [index.html](src/index.html), [public/](public/)                                                                                                                                               | Browser HTML shell, fonts/icon stylesheets, and static assets.                                                                                               |
 
 The root shell and larger routed book pages use separate HTML files. Small components keep inline templates.
 Templates use `@if`, `@switch`, and `@for` with stable book IDs. All production components use `OnPush` and the default
@@ -93,7 +94,8 @@ The subsequent Angular 21 upgrade uses the official [ng update process](https://
 local CLI/build at 21.2.30, framework/compiler at 21.2.26, Material/CDK at 21.2.14, and required NgRx/toolkit peers.
 Required migrations completed without source changes. Node 24, TypeScript 5.9, RxJS 7.8, and the explicit Zone.js
 configuration are retained. `npm run ng -- version` reports the workspace CLI; the Cursor CLI MCP entry pins major 21.
-The production build, custom MCP build/generation checks, and all 57 application Chromium cases pass on the new server.
+At that upgrade, the production build, custom MCP build/generation checks, and all 57 application Chromium cases passed
+on the new server. The subsequent Signal Forms migration retains those cases and adds two form characterizations.
 
 The standalone [book review example](src/components/book-review-example.component.ts) is an intentionally flawed fixture
 for pull-request code-review exercises. It lives under the requested `src/components/` path and is not part of the routed
@@ -152,6 +154,24 @@ search, filters, and personal views.
 The catalogue is reloaded when the collection page is recreated; no query-cache dependency has been added. Loading the
 whole dataset fits the current workshop catalogue. A substantially larger collection would need a backend contract that
 can combine original records and per-user edits before server-side filtering/pagination.
+
+### Monthly reading recommendation
+
+The home header includes a keyboard-accessible recommendation tile with a book/star SVG, adapted to the semantic blue
+accent and light/dark surfaces. It links to lazy `/recommendation`; the shortcut itself needs no extra HTTP request.
+The feature page loads the catalogue on entry/retry and combines it with browser library state through one async-pipe
+subscription. Loading, recoverable error, and successful-empty states reuse shared feedback components.
+
+The pure selector reuses the full collection projection, including created records and local edits, with no gallery
+filters or page limit. It sorts stable IDs and selects `(year * 12 + zeroBasedMonth) % count`, using the browser's local
+calendar. With the same collection and month, API reordering and personal-status changes do not change the pick; the
+next month advances the selection. Changing collection membership can change the selected book. No selection record,
+timer, external recommendation service, or API mutation is added.
+
+The spotlight presents actual cover/author/title/subtitle/publisher/pages/price/description data. It reuses the cover
+fallback, saved/status controls, and the selected book's details route, including local IDs. The layout stacks at narrow
+widths. The screenshot reference supplies composition and icon inspiration; unavailable rating/format/checkout data is
+not fabricated.
 
 ### Gallery and interactive Universe
 
@@ -217,10 +237,20 @@ override and returns to details; Cancel leaves stored data unchanged. Title must
 whole number. Editable fields are title, subtitle, author, publisher, ISBN, page count, formatted price, cover URL, and
 description. Book ID and user ID are not edited; changing the displayed ISBN does not change routing identity.
 
-The editor and collection filters use typed reactive `FormGroup` controls. `ngOnChanges` copies new editor input into
-the form; submit validates the complete draft before emitting trimmed metadata. Filter input changes synchronize
-without re-emitting, while user changes emit through a subscription owned by `takeUntilDestroyed`. Search and native
-reading-status/map selectors use direct value/event bindings. No production template uses `ngModel`.
+The editor and collection filters use typed signal models and `form()` field trees from `@angular/forms/signals`.
+`ngOnChanges` resets field state with a copied input, preserving an independent draft. Editor schema rules enforce a
+required nonblank title and a required positive whole-number page count; touched/invalid signals control feedback.
+`FormRoot` prevents native navigation, validates/touches the form, and guards duplicate submissions before emitting
+trimmed metadata. `FormField` owns native names and schema-derived required/min attributes. Signal Forms are
+[experimental in Angular 21](https://v21.angular.dev/api/forms/signals/form); this implementation uses the installed
+21.2.26 API, including `FormRoot`.
+
+Filter schemas own numeric minimums and the cross-field range error. Label-level native input/change events run after
+the field binding updates and emit a copied model; programmatic input synchronization does not emit. Reset clears field
+state and emits once. No form subscription/effect bridge is needed. Empty numeric fields remain `null`. Search and native
+reading-status/map selectors retain direct value/event bindings. The unrouted review example also replaces its template
+form binding with a Signal Form; its other review-exercise behavior remains intact. No legacy form imports or bindings
+remain in application source.
 
 The API URL is injected through `BOOK_API_URL`, defaulting to `http://localhost:4730/books`. Single-book IDs are
 URL-encoded, and trailing slashes are normalized. All catalogue requests are GETs. Direct detail/editor links and refreshes
@@ -241,8 +271,9 @@ small screens; controls use the shared themes, live announcements, and reduced-m
 
 The standalone board and its CDK dependencies load through `@defer` inside the selected-tab branch, with loading/error
 feedback, following [Angular's deferred-view guidance](https://angular.dev/guide/templates/defer). The verified build
-separates a 69.78 kB board chunk from the 41.79 kB collection chunk; the initial bundle is 332.36 kB after the Angular 21
-upgrade. These sizes describe this build, not the earlier modernization baseline or total visit bytes.
+separates a 69.77 kB board chunk from the 42.13 kB collection chunk; the initial bundle is 340.04 kB with the monthly
+recommendation feature. That route has a separate 7.06 kB chunk. These sizes describe this build, not the earlier
+modernization baseline or total visit bytes.
 
 ### Error handling and presentation
 

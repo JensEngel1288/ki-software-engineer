@@ -1,8 +1,50 @@
 <div class="container mx-auto max-w-7xl px-4 py-12">
-  <div class="mb-6 border-b border-divider pb-4">
-    <h1 class="text-3xl font-bold text-accent">Book Collection</h1>
-    <p class="mt-2 text-sm text-secondary">Your saved books, reading status, and edits stay in this browser.</p>
-    <a routerLink="/books/new" class="button-primary mt-4 inline-block">Add book</a>
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-6 border-b border-divider pb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-accent">Book Collection</h1>
+      <p class="mt-2 text-sm text-secondary">Your saved books, reading status, and edits stay in this browser.</p>
+      <a routerLink="/books/new" class="button-primary mt-4 inline-block">Add book</a>
+    </div>
+    <a
+      routerLink="/recommendation"
+      aria-label="Reading recommendation"
+      class="focus-ring group flex w-full items-center gap-4 rounded-2xl border border-divider bg-muted-surface px-5 py-4 text-accent shadow-sm transition-colors hover:border-action hover:bg-surface motion-reduce:transition-none sm:w-48 sm:flex-col sm:gap-2 sm:px-4"
+    >
+      <svg
+        class="h-14 w-14 shrink-0 sm:h-20 sm:w-20"
+        aria-hidden="true"
+        viewBox="0 0 96 96"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M73 12H29a9 9 0 0 0-9 9v53a9 9 0 0 0 9 9h29M20 23h53v34M30 23v60" />
+        <path d="M73 12c-8 0-8 11 0 11" />
+        <path
+          d="m73 60 4.3 8.7 9.6 1.4-7 6.8 1.7 9.6-8.6-4.5-8.6 4.5 1.7-9.6-7-6.8 9.6-1.4Z"
+          fill="currentColor"
+          stroke="none"
+        />
+      </svg>
+      <span class="min-w-0">
+        <span class="flex items-center gap-1 text-sm font-semibold leading-snug">
+          <svg
+            aria-hidden="true"
+            class="h-4 w-4 shrink-0"
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+          >
+            <path d="m7 4 6 6-6 6" />
+          </svg>
+          Reading recommendation
+        </span>
+        <span class="mt-1 block text-xs text-secondary sm:text-center">Book of the month</span>
+      </span>
+    </a>
   </div>
   <div
     class="mb-6 flex flex-wrap gap-1 rounded-xl border border-divider bg-muted-surface p-1 sm:w-fit"
