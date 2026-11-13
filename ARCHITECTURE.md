@@ -157,7 +157,7 @@ can combine original records and per-user edits before server-side filtering/pag
 
 ### Monthly reading recommendation
 
-The home header includes a keyboard-accessible recommendation tile with a book/star SVG, adapted to the semantic blue
+The home header includes a keyboard-accessible recommendation tile with a custom open-book and sparkle SVG, adapted to the semantic blue
 accent and light/dark surfaces. It links to lazy `/recommendation`; the shortcut itself needs no extra HTTP request.
 The feature page loads the catalogue on entry/retry and combines it with browser library state through one async-pipe
 subscription. Loading, recoverable error, and successful-empty states reuse shared feedback components.
@@ -271,7 +271,7 @@ small screens; controls use the shared themes, live announcements, and reduced-m
 
 The standalone board and its CDK dependencies load through `@defer` inside the selected-tab branch, with loading/error
 feedback, following [Angular's deferred-view guidance](https://angular.dev/guide/templates/defer). The verified build
-separates a 69.77 kB board chunk from the 42.13 kB collection chunk; the initial bundle is 340.04 kB with the monthly
+separates a 69.77 kB board chunk from the 42.38 kB collection chunk; the initial bundle is 340.04 kB with the monthly
 recommendation feature. That route has a separate 7.06 kB chunk. These sizes describe this build, not the earlier
 modernization baseline or total visit bytes.
 

@@ -6,6 +6,7 @@ This file applies throughout the repository. Read [src/AGENTS.md](src/AGENTS.md)
 [src/app/books/AGENTS.md](src/app/books/AGENTS.md) for changes in the books feature. Nested guidance applies to its
 directory and descendants and takes precedence over broader guidance when they differ; see the
 [official OpenAI documentation](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+Read [tests/AGENTS.md](tests/AGENTS.md) for Playwright specs, fixtures, Page Objects, and test helpers.
 
 BookMonkey is a browser-rendered Angular application for browsing, searching, organizing, and editing books, with
 browser-local personal lists/edits and light/dark mode.

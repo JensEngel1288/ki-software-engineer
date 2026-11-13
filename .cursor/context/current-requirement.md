@@ -115,3 +115,25 @@ fixture@72` does not appear in structured errors and did not fail any case.
 Delivery is working-tree changes, including preserved pending Signal Forms work.
 No GitHub issue or remote publication applies. Final checks: touched-file Prettier,
 relative Markdown links, source/route review, and `git diff --check`.
+
+## Icon follow-up — 2026-11-13
+
+The user requested a different recommendation icon, motivated by avoiding reuse
+of the screenshot's design. This explicitly supersedes the original book/star
+motif. Replace it with a custom, code-drawn compass: concentric rings, cardinal
+ticks, and a two-tone needle. Preserve currentColor theme styling, decorative
+accessibility semantics, tile layout, label, and destination. This is a visual
+amendment to the completed recommendation feature.
+
+Verification: production build and all seven recommendation Chromium cases passed
+(10.4 seconds), including keyboard activation and both mobile themes. Touched-file
+Prettier and `git diff --check` passed. No tests or dependencies changed.
+
+### Corrected icon direction
+
+The user's follow-up requires a book with a star. Replace the compass with a
+distinct open-book drawing and four-point sparkles, keeping the current theme,
+tile layout, accessibility, and destination. This supersedes the compass choice.
+
+Verified: production build and all seven recommendation Chromium cases passed
+(7.2 seconds). No tests or dependencies changed.
