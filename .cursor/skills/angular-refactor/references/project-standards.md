@@ -86,3 +86,8 @@ of committed runner configuration.
 
 Inspect narrow-screen screenshots as well as overflow assertions: a native selector can fit the viewport while being
 too cramped beside an action button. Keep labels and selected values usable in both themes.
+
+For spatial UI, keep deterministic world layout/projection separate from camera events and presentation. Validate
+rendered position/size changes and keyboard alternatives. Review a dense real catalogue as well as small fixtures:
+halos and labels can crowd a scene even when every book remains discoverable. Use existing theme utilities for layout
+before expanding component-style budgets to accommodate visual effects.

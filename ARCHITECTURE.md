@@ -156,12 +156,15 @@ including books beyond the current ten cards; switching tabs does not start anot
 
 [BookUniverseComponent](src/app/books/book-universe.component.ts) owns only map presentation, selection, and camera
 interaction. Its [HTML](src/app/books/book-universe.component.html) and [CSS](src/app/books/book-universe.component.css)
-render an SVG star map, native controls, and a shared-cover preview linked to the existing details route. The pure
-[layout function](src/app/books/book-universe-layout.ts) positions books deterministically in constellations grouped by
-publisher or author, using the currently displayed metadata including local edits. It preserves the query's book order
-for keyboard navigation and the native book selector. No genre metadata, new route, dependency, or API write is added.
+render a perspective-projected 3D galaxy, native controls, and a shared-cover preview linked to the existing details
+route. The pure [layout and projection functions](src/app/books/book-universe-layout.ts) distribute books in world-space
+constellations with X/Y/Z coordinates, rotate them by camera yaw/pitch, and apply a perspective divide to positions and
+star sizes. Publisher/author grouping uses displayed metadata including local edits. Query order remains stable
+for keyboard navigation and the native selector. Rendering uses SVG without a WebGL library, dependency, or API write.
 
-The camera supports bounded zoom, pointer dragging/capture, Ctrl/Meta-wheel zoom, keyboard panning, and Fit all. Each
+The camera supports pointer orbit/capture, native rotate/tilt buttons, arrow-key orbit, Shift-drag/Shift-arrow panning,
+bounded zoom, Ctrl/Meta-wheel zoom, and Fit all. Fit all resets orientation, zoom, and pan. A native book selection centers
+that star at 200% zoom. Each
 star has an accessible name and selected state; one star participates in tab order, with arrow/Home/End navigation
 between stars. The native selector provides an alternative to small visual targets on narrow screens. Star labels and
 decorative glows do not intercept the interactive hit area. New matching data or grouping resets the overview and keeps
@@ -174,6 +177,12 @@ shared cover uses the same source-linked pattern to clear failure state for a ne
 Loading, retry/error, and empty feedback remain owned by the collection page in either display. The map adapts its
 preview below the canvas on narrow screens; the star field intentionally keeps its dark astronomical palette in both
 application themes. Outside the chart, controls and preview use the existing semantic theme styles.
+
+The galaxy layers a luminous core, projected orbital paths, 320 deterministic spiral-dust particles, 150 distant stars,
+and grouped book stars. Dense catalogues suppress unselected group labels; stronger rings identify selection/hover/focus.
+CSS ambient twinkling and core glow stop under reduced-motion preference. Camera movement is user-controlled and has no
+animation loop, timers, or global listeners to tear down. The preview gives the shared cover a CSS 3D spine/pages effect.
+Common layout uses theme utilities; scene-specific styles remain within the existing 4 kB component-style budget.
 
 ### Browser-local library and editing
 
@@ -226,8 +235,8 @@ small screens; controls use the shared themes, live announcements, and reduced-m
 
 The standalone board and its CDK dependencies load through `@defer` inside the selected-tab branch, with loading/error
 feedback, following [Angular's deferred-view guidance](https://angular.dev/guide/templates/defer). The verified build
-separates a 69.86 kB board chunk from the 32.95 kB collection chunk; the initial bundle is 318.56 kB. These sizes describe
-this feature build, not the earlier modernization baseline or total visit bytes.
+separates a 69.86 kB board chunk from the 42.00 kB collection chunk; the initial bundle is 321.55 kB after the 3D Universe
+update. These sizes describe this feature build, not the earlier modernization baseline or total visit bytes.
 
 ### Error handling and presentation
 
@@ -355,7 +364,8 @@ responses, and captured application error reports. They do not require a running
 - [universe.spec.ts](tests/universe.spec.ts): display tabs and keyboard focus, preserved query/personal views, 250 matching
   stars before gallery limits, no extra catalogue requests, preview/details navigation, zoom/drag/Fit, keyboard star
   navigation, grouping, cover recovery and selection/camera updates, loading/error/retry/empty feedback, and 320px layouts
-  in both themes.
+  in both themes. Additional 3D cases check perspective size/position changes, pointer/keyboard orbit, native tilt,
+  complete camera reset, grouping/selection, and reduced-motion behavior.
 - [example.spec.ts](tests/example.spec.ts) and [tests-examples/](tests-examples/) remain external demonstration scaffolding.
   Karma still has no source specs or directly declared Karma/Jasmine dependencies.
 

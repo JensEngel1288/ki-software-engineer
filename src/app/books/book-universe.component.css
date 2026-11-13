@@ -7,154 +7,241 @@
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  background: #081225;
+  background: #030815;
   color: #e2e8f0;
   background-image:
-    radial-gradient(ellipse at 28% 35%, #25396588, transparent 55%),
-    radial-gradient(ellipse at 80% 70%, #43336555, transparent 50%);
+    radial-gradient(ellipse at 35% 48%, #183f5d44, transparent 60%),
+    radial-gradient(ellipse at 70% 55%, #39245c44, transparent 50%);
 }
-
-.cosmos::before {
+.cosmos::after {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 1;
   content: '';
-  opacity: 0.45;
-  background-image:
-    radial-gradient(1px 1px at 17px 29px, #c4d8ff, transparent),
-    radial-gradient(1px 1px at 53px 71px, #e2e8f0, transparent);
-  background-size:
-    83px 97px,
-    137px 113px;
   pointer-events: none;
+  box-shadow: inset 0 0 100px 15px #020611aa;
 }
-
 .star-map {
   display: block;
   width: 100%;
-  height: clamp(360px, 46vw, 580px);
+  height: clamp(420px, 46vw, 640px);
   touch-action: none;
   user-select: none;
   cursor: grab;
 }
-
 .star-map.dragging {
   cursor: grabbing;
 }
-
 .star-map:focus-visible {
   outline: 2px solid #67e8f9;
   outline-offset: -4px;
 }
-
-.map-caption {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  color: #cbd5e1;
+.distant-stars {
+  fill: #c5d7f7;
   pointer-events: none;
 }
-
-.map-indicator {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #67e8f9;
-  box-shadow: 0 0 10px #67e8f9;
+.distant-stars circle {
+  opacity: 0.45;
+  animation: twinkle 7s ease-in-out infinite alternate;
 }
-
+.galaxy-aura {
+  pointer-events: none;
+  animation: breathe 12s ease-in-out infinite alternate;
+}
+.galactic-dust {
+  pointer-events: none;
+}
 .orbit-lines {
   fill: none;
-  stroke: #b2c6f0;
-  stroke-opacity: 0.07;
-  stroke-dasharray: 3 9;
+  stroke: #b4c9fa;
+  stroke-opacity: 0.13;
+  stroke-width: 0.8;
+  stroke-dasharray: 2 9;
   pointer-events: none;
 }
-
+.orbit-lines path:nth-child(2) {
+  stroke: #b4adfb;
+  stroke-dasharray: none;
+  stroke-opacity: 0.1;
+}
 .constellation {
   pointer-events: none;
 }
-
 .constellation path {
   fill: none;
-  stroke-width: 1;
-  stroke-opacity: 0.3;
+  stroke-width: 0.8;
+  stroke-opacity: 0.14;
 }
-
 .constellation text {
-  font-size: 13px;
-  letter-spacing: 0.04em;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  paint-order: stroke;
+  stroke: #030815;
+  stroke-width: 4px;
 }
-
 .constellation .constellation-count {
-  fill: #94a3b8;
-  font-size: 10px;
+  fill: #8b9bb5;
+  font-size: 9px;
+  letter-spacing: 0.08em;
 }
-
+.constellation.quiet:not(.active) text {
+  opacity: 0;
+}
+.constellation.active path {
+  stroke-opacity: 0.45;
+}
 .book-star {
   cursor: pointer;
   outline: none;
 }
-
 .star-target {
   fill: transparent;
 }
-
 .star-halo {
   fill: var(--star-color);
-  opacity: 0.13;
+  opacity: 0.05;
   pointer-events: none;
 }
-
 .star-core {
   fill: var(--star-color);
-  filter: drop-shadow(0 0 6px var(--star-color));
+  filter: drop-shadow(0 0 5px var(--star-color));
 }
-
+.star-highlight {
+  fill: #fff;
+  opacity: 0.85;
+  pointer-events: none;
+}
 .star-ring {
   fill: none;
   stroke: var(--star-color);
-  stroke-opacity: 0.15;
+  stroke-opacity: 0;
   pointer-events: none;
 }
-
-.star-spark {
+.star-orbit {
+  fill: none;
   stroke: var(--star-color);
   stroke-width: 0.8;
-  opacity: 0.5;
+  opacity: 0;
   pointer-events: none;
 }
-
+.star-spark {
+  stroke: var(--star-color);
+  stroke-width: 0.6;
+  opacity: 0.4;
+  pointer-events: none;
+}
 .star-title {
-  fill: #f1f5f9;
-  font-size: 12px;
+  fill: #e9f3ff;
+  font-size: 11px;
   paint-order: stroke;
-  stroke: #081225;
+  stroke: #030815;
   stroke-width: 5px;
   stroke-linejoin: round;
   opacity: 0;
   pointer-events: none;
 }
-
 .book-star:is(:hover, :focus-visible, .selected) .star-ring {
   stroke-opacity: 1;
-  stroke-width: 2;
+  stroke-width: 1.5;
 }
-
 .book-star:is(:hover, :focus-visible, .selected) .star-halo {
-  opacity: 0.3;
+  opacity: 0.2;
 }
-
+.book-star:is(:hover, :focus-visible, .selected) .star-orbit {
+  opacity: 0.7;
+}
 .book-star:is(:hover, :focus-visible, .selected) + .star-title {
   opacity: 1;
 }
-
 .book-star:focus-visible .star-ring {
   stroke: white;
-  stroke-width: 3;
+  stroke-width: 2.5;
+}
+.orbit-control {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 5px 10px;
+  font-size: 18px;
+}
+.book-pedestal {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 230px;
+  margin: 6px 0 14px;
+  perspective: 700px;
+  background: radial-gradient(ellipse at 50% 55%, #6595ef1a, transparent 66%);
+}
+.book-pedestal::after {
+  position: absolute;
+  bottom: 12px;
+  width: 140px;
+  height: 10px;
+  border-radius: 50%;
+  background: #5b7fb42a;
+  filter: blur(8px);
+  content: '';
+}
+.book-object {
+  position: relative;
+  z-index: 1;
+  width: 122px;
+  border-radius: 3px 7px 7px 3px;
+  box-shadow: 8px 14px 22px #0004;
+  transform: rotateY(-18deg) rotateX(5deg) rotateZ(-3deg);
+  transform-style: preserve-3d;
+}
+.book-object app-book-cover {
+  display: block;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.book-object::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 2;
+  width: 10px;
+  background: linear-gradient(90deg, #0005, #fff2 30%, #0002 65%, transparent);
+  content: '';
+  pointer-events: none;
+}
+.book-object::after {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  right: -7px;
+  width: 7px;
+  background: repeating-linear-gradient(0deg, #f4f1e7 0 2px, #d8d5cb 2px 3px);
+  border-radius: 0 3px 3px 0;
+  transform: rotateY(65deg);
+  transform-origin: left;
+  content: '';
+}
+@keyframes twinkle {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 0.7;
+  }
+}
+@keyframes breathe {
+  from {
+    opacity: 0.75;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-width: 639px) {
+  .star-map {
+    height: 360px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cosmos *,
+  .cosmos::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

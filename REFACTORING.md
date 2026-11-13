@@ -334,7 +334,7 @@ The workflow started from 42 passing Chromium cases. All 13 new/amended scenario
 were verified Red before production work, then Green. The complete six-suite
 regression run passed all 54 cases without skips or retries. A second complete
 library-suite run passed all 17 cases after the final mobile layout change. Build and acceptance evidence
-are recorded in [.cursor/context/current-requirement.md](.cursor/context/current-requirement.md).
+are recorded in the [completed book-workflow brief](.cursor/context/book-workflow-completed.md).
 
 Prepared skills were refined from observed issues: distinguish Already Green work,
 scope API monitors to the API origin, wait for CDK animation preview cleanup,
@@ -342,3 +342,33 @@ preserve legacy browser state, reuse form/state owners, and reconcile mixed
 existing/new requirements. No acceptance assertion was relaxed: the old Show more
 case was explicitly superseded by pagination; C1's URL monitor and the drag helper
 received documented test-owned corrections.
+
+## Universe in 3D — 2026-11-13
+
+The Universe now uses deterministic X/Y/Z book coordinates and perspective
+projection with user-controlled yaw/pitch. Pure layout/projection stays separate
+from camera events, selection, templates, and HTTP. Existing query order, grouping,
+preview/detail navigation, cover fallback, and full-catalogue matching are retained.
+Native rotation/tilt buttons and keyboard orbit complement pointer controls;
+Shift-drag/arrows retain panning. Fit all resets the complete camera.
+
+The scene adds a luminous core, spiral dust, orbital paths, depth-scaled stars,
+ambient twinkling, and a CSS 3D book preview. Reduced motion stops ambient effects.
+Review against 250 live books caught crowded halos; smaller, softer halos and
+selected-group labels improve density. Common layout moved to existing theme
+utilities, bringing component CSS below its original 4 kB warning budget without
+raising limits. No graphics dependency or animation lifecycle was added.
+
+Baseline: ten Universe cases passed. Five new/amended cases were verified Red;
+the initial implementation passed all 13 Universe cases. A full-run geometry test
+exposed a measurement before async stars existed. An explicit item-count readiness
+assertion corrected that test-owned race while preserving its geometry expectations.
+The final six-suite run passed all 57 Chromium cases without skips/flaky cases.
+The production build passed without warnings; initial bundle 321.55 kB and collection
+chunk 42.00 kB. Desktop/rotated/mobile screenshots verified the live 250-book scene.
+
+Prepared test/refactoring references capture the geometry readiness, dense-scene
+review, pure projection, keyboard alternatives, and stylesheet budget lessons.
+[Current delivery evidence](.cursor/context/current-requirement.md) preserves the
+criterion mapping and exact commands. Firefox/WebKit and the incomplete Karma
+scaffold remain unverified.

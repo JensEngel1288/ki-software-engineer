@@ -2,15 +2,27 @@ import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, sign
 import { RouterLink } from '@angular/router';
 import { Book } from './book';
 import { BookCoverComponent } from './book-cover.component';
-import { layoutBookUniverse, UniverseGrouping, universeSize } from './book-universe-layout';
+import {
+  layoutBookUniverse,
+  projectBookUniverse,
+  UniverseGrouping,
+  UniverseOrientation,
+  universeSize
+} from './book-universe-layout';
 
-interface MapCamera {
+interface MapCamera extends UniverseOrientation {
   x: number;
   y: number;
   zoom: number;
 }
 
-const overview = (): MapCamera => ({ x: universeSize.width / 2, y: universeSize.height / 2, zoom: 1 });
+const overview = (): MapCamera => ({
+  x: universeSize.width / 2,
+  y: universeSize.height / 2,
+  zoom: 1,
+  yaw: -0.32,
+  pitch: -0.62
+});
 
 @Component({
   selector: 'app-book-universe',
@@ -35,6 +47,15 @@ export class BookUniverseComponent {
   });
   protected readonly dragging = signal(false);
   protected readonly layout = computed(() => layoutBookUniverse(this.books(), this.grouping()));
+  protected readonly scene = computed(() => projectBookUniverse(this.layout(), this.camera()));
+  protected readonly orientationLabel = computed(() => {
+    const { yaw, pitch } = this.camera();
+    return `Orbit ${Math.round((yaw * 180) / Math.PI)}° · Tilt ${Math.round((pitch * 180) / Math.PI)}°`;
+  });
+  protected readonly coreHeight = computed(() => 35 + Math.abs(Math.sin(this.camera().pitch)) * 115);
+  protected readonly selectedConstellation = computed(() =>
+    this.layout().constellations.find(group => group.stars.some(star => star.book.id === this.selectedId()))
+  );
   protected readonly selectedBook = computed(() => this.books().find(book => book.id === this.selectedId()) ?? null);
   protected readonly zoomPercent = computed(() => Math.round(this.camera().zoom * 100));
   protected readonly viewBox = computed(() => {
@@ -43,7 +64,16 @@ export class BookUniverseComponent {
     const height = universeSize.height / zoom;
     return `${x - width / 2} ${y - height / 2} ${width} ${height}`;
   });
-  private drag: { pointerId: number; x: number; y: number; camera: MapCamera; units: number } | null = null;
+  private drag: {
+    pointerId: number;
+    x: number;
+    y: number;
+    camera: MapCamera;
+    units: number;
+    width: number;
+    height: number;
+    pan: boolean;
+  } | null = null;
 
   protected selectBook(id: string): void {
     this.selectedId.set(id);
@@ -51,8 +81,8 @@ export class BookUniverseComponent {
 
   protected chooseBook(id: string): void {
     this.selectBook(id);
-    const star = this.layout().stars.find(star => star.book.id === id);
-    if (star) this.camera.set({ x: star.x, y: star.y, zoom: 2 });
+    const star = this.scene().stars.find(star => star.book.id === id);
+    if (star) this.camera.update(camera => ({ ...camera, x: star.x, y: star.y, zoom: 2 }));
   }
 
   protected changeGrouping(grouping: string): void {
@@ -67,6 +97,14 @@ export class BookUniverseComponent {
 
   protected fitAll(): void {
     this.camera.set(overview());
+  }
+
+  protected rotate(yaw: number, pitch: number): void {
+    this.camera.update(camera => ({ ...camera, ...this.boundRotation(camera.yaw + yaw, camera.pitch + pitch) }));
+  }
+
+  private boundRotation(yaw: number, pitch: number): UniverseOrientation {
+    return { yaw: Math.atan2(Math.sin(yaw), Math.cos(yaw)), pitch: Math.max(-1.2, Math.min(1.2, pitch)) };
   }
 
   protected onWheel(event: WheelEvent): void {
@@ -85,6 +123,9 @@ export class BookUniverseComponent {
       x: event.clientX,
       y: event.clientY,
       camera,
+      width: bounds.width,
+      height: bounds.height,
+      pan: event.shiftKey,
       units: Math.max(universeSize.width / bounds.width, universeSize.height / bounds.height) / camera.zoom
     };
     svg.setPointerCapture(event.pointerId);
@@ -94,7 +135,17 @@ export class BookUniverseComponent {
 
   protected moveDrag(event: PointerEvent): void {
     if (!this.drag || this.drag.pointerId !== event.pointerId) return;
-    const { x, y, camera, units } = this.drag;
+    const { x, y, camera, units, pan, width, height } = this.drag;
+    if (!pan) {
+      this.camera.set({
+        ...camera,
+        ...this.boundRotation(
+          camera.yaw + ((event.clientX - x) / width) * 3.4,
+          camera.pitch + ((event.clientY - y) / height) * 2
+        )
+      });
+      return;
+    }
     this.camera.set({
       ...camera,
       x: Math.max(0, Math.min(universeSize.width, camera.x - (event.clientX - x) * units)),
@@ -121,6 +172,10 @@ export class BookUniverseComponent {
     const direction = directions[event.key];
     if (direction) {
       event.preventDefault();
+      if (!event.shiftKey) {
+        this.rotate(direction[0] * 0.22, direction[1] * 0.16);
+        return;
+      }
       this.camera.update(camera => ({
         ...camera,
         x: Math.max(0, Math.min(universeSize.width, camera.x + (direction[0] * 70) / camera.zoom)),

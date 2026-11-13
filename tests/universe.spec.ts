@@ -196,6 +196,7 @@ for (const theme of ['light', 'dark'] as const) {
     await mockBooks(page, catalogue);
     await page.goto(appUrl);
     await page.getByRole('tab', { name: 'Universe', exact: true }).click();
+    await page.getByRole('button', { name: 'Rotate right', exact: true }).click();
     await page.getByRole('combobox', { name: 'Choose a book', exact: true }).selectOption('node');
     await expect(page.getByRole('complementary', { name: 'Selected book' })).toContainText('Node.js Guide');
     await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
@@ -204,6 +205,75 @@ for (const theme of ['light', 'dark'] as const) {
     expect(errorReports).toHaveLength(0);
   });
 }
+
+test('[3D1] orbit changes perspective positions and sizes while Fit all restores the overview', async ({ page }) => {
+  await mockBooks(page, catalogue);
+  await page.goto(appUrl);
+  await page.getByRole('tab', { name: 'Universe', exact: true }).click();
+  const stars = page.getByRole('button', { name: /^Select book:/ });
+  await expect(stars).toHaveCount(catalogue.length);
+  const sizes = await stars.evaluateAll(elements => elements.map(element => element.getBoundingClientRect().width));
+  expect(Math.max(...sizes) - Math.min(...sizes)).toBeGreaterThan(1);
+  const first = stars.first();
+  const initial = (await first.boundingBox())!;
+  const orientation = page.getByLabel('Camera orientation', { exact: true });
+  const overview = await orientation.textContent();
+  await page.getByRole('button', { name: 'Rotate right', exact: true }).click();
+  await expect(orientation).not.toHaveText(overview!);
+  await expect.poll(async () => (await first.boundingBox())!.width).not.toBeCloseTo(initial.width, 1);
+  await expect(stars).toHaveCount(catalogue.length);
+  await expect(page.getByRole('complementary', { name: 'Selected book' })).toContainText(book.title);
+  await page.getByRole('button', { name: 'Fit all', exact: true }).click();
+  await expect(orientation).toHaveText(overview!);
+  const restored = (await first.boundingBox())!;
+  expect(restored.x).toBeCloseTo(initial.x, 1);
+  expect(restored.width).toBeCloseTo(initial.width, 1);
+});
+
+test('[3D2] pointer and keyboard orbit, native tilt, and regrouping preserve book selection', async ({ page }) => {
+  await mockBooks(page, catalogue);
+  await page.goto(appUrl);
+  await page.getByRole('tab', { name: 'Universe', exact: true }).click();
+  const map = page.getByRole('group', { name: 'Interactive book star map', exact: true });
+  const orientation = page.getByLabel('Camera orientation', { exact: true });
+  const overview = await orientation.textContent();
+  await map.scrollIntoViewIfNeeded();
+  const bounds = (await map.boundingBox())!;
+  await page.mouse.move(bounds.x + 16, bounds.y + bounds.height - 20);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + 140, bounds.y + bounds.height - 65, { steps: 8 });
+  await page.mouse.up();
+  await expect(orientation).not.toHaveText(overview!);
+  await page.getByRole('button', { name: 'Fit all', exact: true }).click();
+  await map.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(orientation).not.toHaveText(overview!);
+  const rotated = await orientation.textContent();
+  await page.getByRole('button', { name: 'Tilt up', exact: true }).click();
+  await expect(orientation).not.toHaveText(rotated!);
+  await page.getByRole('combobox', { name: 'Group constellations by', exact: true }).selectOption('author');
+  await expect(orientation).toHaveText(overview!);
+  await page.getByRole('combobox', { name: 'Choose a book', exact: true }).selectOption('node');
+  await expect(page.getByRole('complementary', { name: 'Selected book' })).toContainText('Node.js Guide');
+});
+
+test('[3D3] reduced motion stops ambient animation without disabling 3D controls', async ({ page, errorReports }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await mockBooks(page, catalogue);
+  await page.goto(appUrl);
+  await page.getByRole('tab', { name: 'Universe', exact: true }).click();
+  await page.getByRole('button', { name: 'Rotate left', exact: true }).click();
+  await page.getByRole('button', { name: 'Tilt down', exact: true }).click();
+  const running = await page
+    .locator('.cosmos')
+    .evaluate(
+      element => element.getAnimations({ subtree: true }).filter(animation => animation.playState === 'running').length
+    );
+  expect(running).toBe(0);
+  await page.getByRole('button', { name: 'Fit all', exact: true }).click();
+  await expect(page.getByLabel('Map zoom', { exact: true })).toHaveText('100%');
+  expect(errorReports).toHaveLength(0);
+});
 
 test('SM6: Universe retains catalogue error/retry and explains empty matches', async ({ page }) => {
   let attempts = 0;

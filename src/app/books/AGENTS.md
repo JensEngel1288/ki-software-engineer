@@ -43,9 +43,12 @@ query lifecycle and error-reporting boundaries.
   emissions; its user-change subscription uses `takeUntilDestroyed`. Clear resets all controls and emits once.
 
 - [book-universe.component.ts](book-universe.component.ts) owns the home-page Universe display's SVG, preview, selection,
-  and camera controls. [book-universe-layout.ts](book-universe-layout.ts) provides pure deterministic constellation layout
-  by publisher/author. Keep it free of HTTP, storage, and navigation side effects; the preview uses the existing details
+  and camera controls. [book-universe-layout.ts](book-universe-layout.ts) owns deterministic 3D world coordinates and
+  perspective projection by publisher/author. Keep it free of HTTP, storage, and navigation side effects; the preview uses the existing details
   link and shared cover component. Preserve keyboard access, native selection, drag/zoom/Fit, and narrow-screen usability.
+- Universe dragging/arrows orbit the camera; Shift-drag/Shift-arrows pan. Keep native rotate/tilt controls, bounded pitch/
+  zoom, perspective-scaled stars, and Fit all's complete camera reset. Decorative dust, labels, and glows must not intercept
+  star targets. Stop ambient animation for reduced motion; camera movement remains user-controlled.
 - Gallery/Universe/Reading list display selection is independent of collection membership. `CollectionPage.matchingBooks`
   contains all filtered/sorted matches for the map and board; `books` contains only the current gallery page. Switching
   display preserves the query and existing subscription. Collection request feedback remains owned by the page.

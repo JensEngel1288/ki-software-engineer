@@ -109,3 +109,7 @@ mock the feature's own save command to claim the persistence scenario works.
   accessible names. Use observable state synchronization rather than fixed sleeps or longer retries.
 - Verify native status controls separately from dragging. Reload to check column and card-order persistence. Seed the
   old storage shape only for a migration scenario; otherwise create state through the UI, preserving it on reload.
+
+For spatial UI, assert the expected visible item count before `evaluateAll`/geometry measurements: evaluation does not
+wait for asynchronously loaded stars and can return an empty array. Verify rotation changes both position and apparent
+size, then restores on reset; a CSS transform declaration alone does not establish usable 3D interaction.
