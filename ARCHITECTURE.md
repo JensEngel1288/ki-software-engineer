@@ -8,40 +8,40 @@ Versions below are the declarations in [package.json](./package.json). [package-
 
 ### Application dependencies in use
 
-| Dependency                                                                           | Declared version    | Role in this application                                                                                                                             |
-| ------------------------------------------------------------------------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@angular/core`, `@angular/common`, `@angular/compiler`, `@angular/platform-browser` | `20.2.1`            | Components, dependency injection, common template directives, template compilation, browser bootstrap, and `HttpClient` from `@angular/common/http`. |
-| `@angular/router`                                                                    | `20.2.1`            | Displays the book list and book details in the root router outlet and redirects unknown URLs to the home route.                                      |
-| `@angular/forms`                                                                     | `20.2.1`            | Typed reactive forms for collection filters and validated independent editing drafts. Single-action controls use native value/event bindings.        |
-| `rxjs`                                                                               | `7.8.0`             | Supplies typed API and view-state streams, cancels obsolete searches and route requests, and coordinates retries.                                    |
-| `zone.js`                                                                            | `0.15.0`            | Loaded as a polyfill; zone-based change detection is configured with event coalescing.                                                               |
-| `@angular/material`, `@angular/cdk`                                                  | `^20.2.0`, `20.2.0` | Material snackbar support in `ToastService` and CDK drag/drop for the reading board. The book screen does not call the toast service.                |
-| `tslib`                                                                              | `2.3.0`             | Runtime helpers for TypeScript compilation; `importHelpers` is enabled.                                                                              |
+| Dependency                                                                           | Declared version      | Role in this application                                                                                                                             |
+| ------------------------------------------------------------------------------------ | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@angular/core`, `@angular/common`, `@angular/compiler`, `@angular/platform-browser` | `21.2.26`             | Components, dependency injection, common template directives, template compilation, browser bootstrap, and `HttpClient` from `@angular/common/http`. |
+| `@angular/router`                                                                    | `21.2.26`             | Displays the book list and book details in the root router outlet and redirects unknown URLs to the home route.                                      |
+| `@angular/forms`                                                                     | `21.2.26`             | Typed reactive forms for collection filters and validated independent editing drafts. Single-action controls use native value/event bindings.        |
+| `rxjs`                                                                               | `7.8.0`               | Supplies typed API and view-state streams, cancels obsolete searches and route requests, and coordinates retries.                                    |
+| `zone.js`                                                                            | `0.15.0`              | Loaded as a polyfill; zone-based change detection is configured with event coalescing.                                                               |
+| `@angular/material`, `@angular/cdk`                                                  | `^21.2.14`, `21.2.14` | Material snackbar support in `ToastService` and CDK drag/drop for the reading board. The book screen does not call the toast service.                |
+| `tslib`                                                                              | `2.3.0`               | Runtime helpers for TypeScript compilation; `importHelpers` is enabled.                                                                              |
 
 ### Development and styling dependencies
 
 | Dependency                            | Declared version      | Purpose                                                                                                                     |
 | ------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `typescript`                          | `5.9.2`               | Application language with strict type checking and an ES2022 target.                                                        |
-| `@angular/cli`, `@angular/build`      | `20.2.0`              | CLI commands, application builds, and the development server.                                                               |
-| `@angular/compiler-cli`               | `20.2.1`              | Angular compilation and template type checking.                                                                             |
+| `@angular/cli`, `@angular/build`      | `21.2.30`             | CLI commands, application builds, and the development server.                                                               |
+| `@angular/compiler-cli`               | `21.2.26`             | Angular compilation and template type checking.                                                                             |
 | `tailwindcss`, `@tailwindcss/postcss` | `4.1.12`              | Utility classes for layout, responsive book cards, colors, and loading indicators.                                          |
 | `postcss`                             | `8.5.6`               | Runs the Tailwind plugin configured in [.postcssrc.json](./.postcssrc.json).                                                |
 | `prettier`                            | `3.6.2`               | Formatting configured in [.prettierrc](./.prettierrc), including Angular HTML parsing.                                      |
 | `@playwright/test`                    | `^1.55.0`             | Browser test infrastructure for Chromium, Firefox, and WebKit, including book details tests with intercepted API responses. |
-| `@types/node`, `@types/express`       | `^20.17.19`, `^5.0.1` | Type definitions for Node tooling and Express-related code.                                                                 |
+| `@types/node`, `@types/express`       | `^20.19.43`, `^5.0.1` | Type definitions for Node tooling and Express-related code.                                                                 |
 
 ### Additional declared dependencies
 
 `@angular/animations` remains declared for the workshop but has no application provider or animation triggers.
 Application transitions use CSS; the unused legacy animation provider has been removed.
 
-| Dependency                                            | Declared version            | Current integration                                                                                            |
-| ----------------------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `@ngrx/signals`                                       | `20.0.1`                    | No Signal Store is defined or used in the current source.                                                      |
-| `@angular-architects/ngrx-toolkit`                    | `^20.1.0`                   | No toolkit integration is present.                                                                             |
-| `@tanstack/angular-query-experimental`                | `^5.85.5`                   | No query client provider or query hooks are used; HTTP subscriptions are handled directly by the component.    |
-| `@angular/platform-server`, `@angular/ssr`, `express` | `20.2.1`, `20.2.1`, `5.1.0` | No server entry point or SSR build configuration is present. The configured application starts in the browser. |
+| Dependency                                            | Declared version              | Current integration                                                                                            |
+| ----------------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `@ngrx/signals`                                       | `21.1.1`                      | No Signal Store is defined or used in the current source.                                                      |
+| `@angular-architects/ngrx-toolkit`                    | `^21.0.1`                     | No toolkit integration is present.                                                                             |
+| `@tanstack/angular-query-experimental`                | `^5.85.5`                     | No query client provider or query hooks are used; HTTP subscriptions are handled directly by the component.    |
+| `@angular/platform-server`, `@angular/ssr`, `express` | `21.2.26`, `21.2.30`, `5.1.0` | No server entry point or SSR build configuration is present. The configured application starts in the browser. |
 
 ## Structure and responsibilities
 
@@ -83,11 +83,17 @@ Templates use `@if`, `@switch`, and `@for` with stable book IDs. All production 
 standalone behavior. Component contracts use `input()`/`output()`; local UI state uses signals and computed values.
 Pages subscribe to composed request state once through the async pipe, retaining RxJS cancellation and query timing.
 
-The modernization follows the installed Angular CLI 20.2.0 MCP server's `get_best_practices` guide, retrieved directly
+The earlier modernization followed Angular CLI 20.2.0 MCP server's `get_best_practices` guide, retrieved directly
 over stdio. [Cursor MCP configuration](.cursor/mcp.json) exposes the CLI server for editor sessions. No Angular upgrade
 or dependency changes were needed. The production build's initial bundle decreased from 445.74 kB to 307.44 kB through
 lazy component routes and removal of the unused animation provider. Route-specific chunks load when needed; these
 figures describe the initial build budget rather than the total bytes fetched during a visit.
+
+The subsequent Angular 21 upgrade uses the official [ng update process](https://angular.dev/cli/update), aligning the
+local CLI/build at 21.2.30, framework/compiler at 21.2.26, Material/CDK at 21.2.14, and required NgRx/toolkit peers.
+Required migrations completed without source changes. Node 24, TypeScript 5.9, RxJS 7.8, and the explicit Zone.js
+configuration are retained. `npm run ng -- version` reports the workspace CLI; the Cursor CLI MCP entry pins major 21.
+The production build, custom MCP build/generation checks, and all 57 application Chromium cases pass on the new server.
 
 The standalone [book review example](src/components/book-review-example.component.ts) is an intentionally flawed fixture
 for pull-request code-review exercises. It lives under the requested `src/components/` path and is not part of the routed
@@ -235,8 +241,8 @@ small screens; controls use the shared themes, live announcements, and reduced-m
 
 The standalone board and its CDK dependencies load through `@defer` inside the selected-tab branch, with loading/error
 feedback, following [Angular's deferred-view guidance](https://angular.dev/guide/templates/defer). The verified build
-separates a 69.86 kB board chunk from the 42.00 kB collection chunk; the initial bundle is 321.55 kB after the 3D Universe
-update. These sizes describe this feature build, not the earlier modernization baseline or total visit bytes.
+separates a 69.78 kB board chunk from the 41.79 kB collection chunk; the initial bundle is 332.36 kB after the Angular 21
+upgrade. These sizes describe this build, not the earlier modernization baseline or total visit bytes.
 
 ### Error handling and presentation
 

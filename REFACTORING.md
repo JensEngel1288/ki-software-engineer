@@ -369,6 +369,22 @@ chunk 42.00 kB. Desktop/rotated/mobile screenshots verified the live 250-book sc
 
 Prepared test/refactoring references capture the geometry readiness, dense-scene
 review, pure projection, keyboard alternatives, and stylesheet budget lessons.
-[Current delivery evidence](.cursor/context/current-requirement.md) preserves the
+[3D Universe delivery evidence](.cursor/context/universe-3d-completed.md) preserves the
 criterion mapping and exact commands. Firefox/WebKit and the incomplete Karma
 scaffold remain unverified.
+
+## Angular CLI 21 upgrade — 2026-11-13
+
+The workspace CLI/build now use 21.2.30 with Angular framework/compiler 21.2.26,
+Material/CDK 21.2.14, NgRx signals 21.1.1, and toolkit 21.0.1. The official update
+command aligned these required peers and regenerated the npm lockfile. Required
+migrations completed without changing application source or tests. Existing
+Zone.js behavior, Node 24, TypeScript 5.9, and RxJS 7.8 were preserved.
+
+The Angular 20 baseline and Angular 21 final run each passed all 57 Chromium
+cases. The verified old development server was stopped before installation and
+a new Angular 21 server started for the final run. Production and MCP builds,
+component generation, live 250-book loading, and the complete npm dependency-tree
+check passed. The final initial bundle is 332.36 kB within the unchanged budgets.
+The CLI MCP configuration pins major 21. [Upgrade evidence](.cursor/context/current-requirement.md)
+records scope, commands, versions, and verification limits.

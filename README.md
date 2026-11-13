@@ -23,6 +23,9 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the tech stack, dependencies, and a
 | `npm install` | Installs the packages to develop the Angular app |
 | `npm start`   | Starts the Angular app                           |
 
+The workspace uses Angular CLI 21 and Node.js 24. Run `npm run ng -- version` to
+check the local toolchain. The installed project CLI is used by the npm scripts.
+
 On the BookMonkey home page, **Add book** creates a browser-local record; **Edit book**
 opens the shared form from a card or details page. Gallery results use ten books per
 page. Open the **Reading list** tab to add books and drag them between **Want to read**,

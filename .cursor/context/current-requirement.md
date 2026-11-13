@@ -1,111 +1,109 @@
-# Universe in 3D
+# Upgrade workspace Angular CLI to 21
 
-Task status: completed — verified local delivery
-Source: user request on 2026-11-13: make my universe 3d and more impressive looking.
-Previous delivery: [book workflow](book-workflow-completed.md), preserved as completed.
+Task status: completed — verified workspace CLI 21 upgrade
+Source: user request on 2026-11-13: update angular cli to 21.
+Previous task: [completed 3D Universe](universe-3d-completed.md).
 
-As a reader, I want to explore my books as a striking, interactive 3D galaxy so
-that discovering books feels spatial and engaging.
+Upgrade the project's local CLI from 20.2.0 to the latest stable 21.x patch.
+The official builder requires Angular 21 peers, so align framework/compiler/build,
+Material/CDK, and affected NgRx/toolkit dependencies through their migrations.
+Existing Node 24, TypeScript 5.9, RxJS 7.8, and application behavior are retained
+where compatible. This does not authorize a new unit-test framework, zoneless
+conversion, application redesign, global CLI install, commit, or publication.
 
-The user authorizes the visual/interaction implementation. Delivery choices are
-perspective-projected 3D coordinates, pointer orbit, native rotation/tilt controls,
-a luminous core, nebula/dust/orbital layers, and a richer preview. Reuse Angular
-and SVG without a graphics dependency or external image assets. This supersedes
-flat background dragging with orbit; Shift-drag retains panning. Existing book
-selection, grouping, search, full-match collection, zoom/Fit all, detail links,
-keyboard star navigation, themes, and mobile usability remain accepted behavior.
+## Acceptance
 
-## Acceptance and verification
+- U21.1: Given the workspace, when its local CLI reports its version, then the
+  resolved CLI is major 21 and npm scripts use that CLI.
+- U21.2: Given the upgraded dependencies, when npm checks the installed tree,
+  then framework/builder/compiler and required peers are compatible without
+  force/legacy-peer-deps overrides. The npm lockfile matches the manifest.
+- U21.3: Given the upgraded toolchain, when production and custom MCP builds run,
+  then both compile successfully with strict checks and existing budgets.
+- U21.4: Given the upgraded development server, when the existing application
+  suites run, then all 57 Chromium cases pass without weakened tests or stale
+  Angular 20 server reuse. Preserve book data/storage, 3D controls, and Zone.js.
+- U21.5: Given editor/tool documentation, then the Angular CLI MCP configuration
+  resolves major 21 and technical guidance reflects the installed versions.
 
-- 3D1: Given matching books, when I rotate the galaxy, then star positions and
-  apparent sizes change with perspective depth, book identities/count remain
-  intact, and Fit all returns the camera to its overview. New Playwright case.
-- 3D2: Given the 3D map, when I drag or use arrow keys/native rotation/tilt buttons,
-  then the camera orbits, selecting books still works, and a grouping change
-  resets the camera. New Playwright case plus existing SM4/SM5 checks.
-- 3D3: Given reduced-motion preference, when I explore the map, then decorative
-  animation is stopped while native controls still work. New Playwright case.
-- 3D4: Given a 320px display in either theme, when I rotate/select/zoom/reset,
-  then the map, controls, and preview remain usable without horizontal overflow.
-  Extend existing SM6 mobile checks without removing their assertions.
-- 3D5: Given the revised view, then the visual design communicates a luminous
-  galaxy with layered stars/dust, core, orbits, selection, and a readable preview.
-  Desktop/mobile screenshot review with the live 250-book catalogue and fixtures.
+## Method and baseline
 
-Existing SM1–SM6 cases establish preserved behavior. Jasmine/Karma has no working
-unit harness; use the established Playwright suites and strict production build.
-No API/storage changes, new dependencies, remote issue, publication, or commit.
+Use [Angular's ng update guidance](https://angular.dev/cli/update) and npm peer
+metadata. Node 24.22.1 / TypeScript 5.9.2 meet Angular 21's
+[compatibility requirements](https://angular.dev/reference/versions).
+The initial tree is clean. CLI/build/CDK are 20.2.0 and framework/compiler 20.2.1.
+This migration uses existing behavior tests and actual version/dependency/build
+checks; do not add tests that merely mirror a package version declaration.
+No GitHub issue was supplied.
 
-Baseline: all ten existing Universe Chromium cases passed before source changes
-(13.2 seconds).
+## Implementation and migration evidence
 
-## Red → Green → visual review
+Baseline: production build passed (321.55 kB initial); all 57 application Chromium
+cases passed (53.6 seconds). The old verified workspace dev-server process was
+stopped before installation, preventing stale-server reuse and Windows file locks.
 
-All five new/amended cases were verified Red before production changes: the two
-320px cases lacked Rotate controls, 3D1 found no perspective size variation, and
-3D2/3D3 lacked orientation/rotation controls. The runner reported no infrastructure
-errors. The Red command used a five-second timeout only to discover missing UI.
+The official update selected CLI/build/SSR 21.2.30, framework/compiler 21.2.26,
+Material/CDK 21.2.14, NgRx signals 21.1.1, and toolkit 21.0.1. CLI, core, CDK,
+Material, and NgRx required migrations all completed, reporting no source changes.
+The existing application-builder/control-flow setup already satisfies the relevant
+migrations. No optional redesign or forced peer overrides were used.
 
-The first implementation passed all 13 Universe cases. World layout and projection
-remain pure; camera, grouping, and selection use the existing signals/component.
-Rendering adds procedural depth, spiral dust, background stars, core and orbital
-paths; native controls and the shared cover/details navigation remain intact.
+Only package manifests/lockfile, CLI MCP config, and project/context documentation
+changed. Source application code, tests, test configuration, compiler/build config,
+Zone.js setup, and unrelated workshop dependencies were preserved. The editor's
+CLI MCP command now requests `@angular/cli@21`. Global CLI installation was outside
+this workspace request.
 
-Desktop/live-catalogue review found crowded halos; lower-intensity/smaller halos
-now leave dense groups clearer. Common layout moved to existing Tailwind/theme
-utilities, resolving a 6.70 kB component-style warning without raising budgets.
-The final production build passes without warnings: 321.55 kB initial bundle,
-42.00 kB collection chunk. Packages, lockfile, and build configuration are unchanged.
+## Acceptance reconciliation
 
-The first full run passed 56/57 cases. New 3D1 used `evaluateAll` before async
-catalogue loading finished, producing an empty measurement array. It now asserts
-the required item count before measuring; size/position/reset assertions remain
-unchanged. No timeout/retry increase or skips were used to hide failures. The
-test-pattern reference records this synchronization lesson; refactoring guidance
-records spatial geometry, dense-data visual review, and stylesheet budget lessons.
+| Criterion | Evidence                                                                                                                                       | Result   |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| U21.1     | `npm run ng -- version`: CLI 21.2.30, Angular 21.2.26, npm 11.21.1, Node 24.22.1                                                               | Verified |
+| U21.2     | `npm ls --all --json` exits 0 with no problems; manifest/lock root dependency maps match exactly                                               | Verified |
+| U21.3     | Production build and `build.angular-mcp` pass; unchanged budgets, initial bundle 332.36 kB                                                     | Verified |
+| U21.4     | New Angular 21 server; all 57 Chromium cases pass; live browser confirms `ng-version` 21.x and 250 API books                                   | Verified |
+| U21.5     | CLI MCP pinned to major 21; existing custom MCP handshake, discovery, isolated generation, Windows paths, validation/errors pass; docs updated | Verified |
 
-## Delivery reconciliation
-
-| Criterion | Implementation/verification                                                                             | Status                     |
-| --------- | ------------------------------------------------------------------------------------------------------- | -------------------------- |
-| 3D1       | 3D coordinates + yaw/pitch perspective divide; `[3D1]` geometry/reset and existing SM4 pointer geometry | Verified                   |
-| 3D2       | Pointer orbit, native rotate/tilt, keyboard arrows, bounded pitch/yaw; `[3D2]` and SM3–SM5              | Verified                   |
-| 3D3       | CSS reduced-motion override; `[3D3]` checks no running ambient animations and usable controls           | Verified                   |
-| 3D4       | Native controls, responsive layout and full preview; both amended SM6 cases                             | Verified                   |
-| 3D5       | Desktop, rotated, 320px light/dark screenshots from live 250-book API; less crowded halos reviewed      | Verified visual/live check |
-
-## Reproducible checks and limits
+## Commands and final verification
 
 ```powershell
-# Baseline: 10 cases; final Universe suite: 13 cases
-node node_modules/@playwright/test/cli.js test tests/universe.spec.ts --config=tmp/playwright.universe.config.ts --project=chromium --workers=1
+# Official migrations; allow-dirty permits only this task's checkpoint changes
+node node_modules/@angular/cli/bin/ng.js update @angular/cli@21 @angular/core@21 @angular/material@21 @ngrx/signals@21 @angular-architects/ngrx-toolkit@21 --allow-dirty
 
-# Red: all five discovered cases failed for missing behavior
-node node_modules/@playwright/test/cli.js test tests/universe.spec.ts --grep "\[3D|SM6: map controls" --config=tmp/playwright.universe.config.ts --project=chromium --workers=1 --timeout=5000
+npm run ng -- version
+npm ls --all --json
+npm run build
+npm run build.angular-mcp
+node tmp/check-angular-mcp.cjs
 
-# Final full regression scope
+# Restarted with the upgraded local CLI
+npm start
+
+# Baseline and final complete application scope
 node node_modules/@playwright/test/cli.js test tests/book-details.spec.ts tests/book-list.spec.ts tests/error-handling.spec.ts tests/theme.spec.ts tests/library.spec.ts tests/universe.spec.ts --config=tmp/playwright.universe.config.ts --project=chromium --workers=1
 
-npm run build
+# Separate live API check, including root ng-version 21.x
+node tmp/check-live-catalogue.cjs
 ```
 
-Final regression: 57 discovered and passed, zero failed/skipped/flaky, exit 0,
-structured errors empty (50.9 seconds). No original assertion was removed or
-weakened. Three cases were added; both existing mobile cases additionally exercise
-rotation. Final production build passed with no budget warning. Changed-file
-Prettier, local Markdown links/skill frontmatter, and `git diff --check` are the
-final documentation checks.
+Final browser result: 57 discovered/passed, zero failed/skipped/flaky, exit 0,
+structured report errors empty (50.3 seconds). Baseline/final case counts and
+assertions are unchanged. The production build has no budget warnings. MCP
+compilation and real component-generation checks pass. The new development server
+is left running at http://localhost:4200 with the separate local API available.
 
-The temporary runner selects this machine's installed Chromium. Portable committed
-configuration is unchanged. Mocked application cases establish feature regressions;
-`node tmp/preview-universe-3d.cjs` separately verified the real API's 250 books,
-captured all four screenshots, and checked 320px overflow in both themes. Ignored
-artifacts: `tmp/universe-3d-red-results.json`, `tmp/universe-3d-final-results.json`, `tmp/universe-3d-desktop.png`,
-`tmp/universe-3d-rotated.png`, and `tmp/universe-3d-mobile-{light,dark}.png`.
+The complete npm tree and matching lockfile are recorded in ignored
+`tmp/angular21-dependencies.json`; baseline/final structured browser reports are
+`tmp/angular21-baseline-results.json` and `tmp/angular21-final-results.json`.
+The temporary runner selects an installed Chromium binary; committed Playwright
+configuration contains no machine-specific executable path.
 
-Firefox/WebKit and the incomplete Jasmine/Karma scaffold were not run. The
-existing Playwright console reporter diagnostic `step id not found: fixture@72`
-also occurs in earlier suites; structured results distinguish errors/case status.
-This delivery is local working-tree code based on revision
-`d9be7237a319df4fc4193defe577fdeef1414003`. No issue number was supplied, so GitHub
-updates/closure are not applicable. No commit, push, PR, or deployment is implied.
+Verification limits: Firefox/WebKit and the incomplete Karma/Jasmine scaffold
+were not run. Application suites mock API/cover responses; the separate live
+browser check verified 250 real books and ten visible cards without API failures.
+The pre-existing Playwright console diagnostic `step id not found: fixture@72`
+occurred in both baseline/final; structured errors are empty and all cases pass.
+
+Delivery is verified local working-tree changes. No GitHub issue, commit, push,
+PR, or deployment was requested. Final documentation checks cover changed-file
+Prettier, relative links, and `git diff --check`.

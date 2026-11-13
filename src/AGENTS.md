@@ -7,7 +7,7 @@ Use [ARCHITECTURE.md](../ARCHITECTURE.md) for the full technical context and
 ## Angular structure
 
 - Use standalone components with explicit template imports and `ChangeDetectionStrategy.OnPush`. Standalone is the
-  Angular 20 default; omit redundant `standalone: true`. Bootstrap lives in [main.ts](main.ts), application providers
+  Angular 21 default; omit redundant `standalone: true`. Bootstrap lives in [main.ts](main.ts), application providers
   in [app/app.config.ts](app/app.config.ts), and lazy component routes in [app/app.routes.ts](app/app.routes.ts). Keep
   the wildcard route last.
 - Use `input()` and `output()` for component contracts, signals for synchronous local state, and `computed()` for
