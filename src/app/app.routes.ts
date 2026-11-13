@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./books/book-list.component').then(m => m.BookListComponent) },
+  { path: 'books/new', loadComponent: () => import('./books/book-create.component').then(m => m.BookCreateComponent) },
   { path: 'books/:id/edit', loadComponent: () => import('./books/book-edit.component').then(m => m.BookEditComponent) },
   {
     path: 'books/:id',

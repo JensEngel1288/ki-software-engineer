@@ -45,7 +45,7 @@
     </label>
   </div>
   <div class="mt-6 flex flex-wrap items-center gap-4">
-    <button type="submit" class="button-primary" [disabled]="form.invalid">Save changes</button>
-    <a [routerLink]="['/books', book().id]" class="text-link">Cancel</a>
+    <button type="submit" class="button-primary" [disabled]="form.invalid">{{ submitLabel() }}</button>
+    <a [routerLink]="cancelLink() ?? ['/books', book().id]" class="text-link">Cancel</a>
   </div>
 </form>

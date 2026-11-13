@@ -23,6 +23,12 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the tech stack, dependencies, and a
 | `npm install` | Installs the packages to develop the Angular app |
 | `npm start`   | Starts the Angular app                           |
 
+On the BookMonkey home page, **Add book** creates a browser-local record; **Edit book**
+opens the shared form from a card or details page. Gallery results use ten books per
+page. Open the **Reading list** tab to add books and drag them between **Want to read**,
+**Currently reading**, and **Read**. Native status menus also move cards. Books, edits,
+reading statuses, and card order persist in this browser through localStorage.
+
 ## Code generation evaluation
 
 The evaluator lives in `web-codegen-scorer-playground`. From this repository root,

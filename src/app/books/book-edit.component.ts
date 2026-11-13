@@ -53,7 +53,8 @@ export class BookEditComponent {
   }
   private loadBook(id: string | null): Observable<EditState> {
     if (!id) return of({ status: 'not-found' });
-    return this.api.getBook(id).pipe(
+    const local = this.library.getCreatedBook(id);
+    return (local ? of(local) : this.api.getBook(id)).pipe(
       map(
         (book): EditState =>
           book ? { status: 'ready', data: applyBookEdits(book, this.library.snapshot) } : { status: 'not-found' }

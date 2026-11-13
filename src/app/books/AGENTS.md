@@ -11,11 +11,13 @@ query lifecycle and error-reporting boundaries.
 - [book-api-client.service.ts](book-api-client.service.ts) owns HTTP access. Keep request construction here and reuse
   the model throughout the feature.
 - [book-list.component.ts](book-list.component.ts) loads the full base catalogue and combines it with local library state
-  and a typed, debounced collection query. [book-collection.ts](book-collection.ts) applies local edits, literal title
-  search, filters, view selection, and sorting before the visible-result limit. One-letter searches match title starts;
+  and a typed, debounced collection query. [book-collection.ts](book-collection.ts) merges created books and applies local
+  edits, literal title search, filters, view selection, and sorting before pagination. One-letter searches match title starts;
   longer searches match anywhere in titles, case-insensitively. Author/description-only matches are not title matches.
 - Search typing waits 300 ms, replacing obsolete delays. Clear, sort/filter/view changes, and page-size updates run
-  immediately without extra search HTTP calls. Retry reloads the catalogue. Preserve async-pipe teardown and Show more.
+  immediately without extra search HTTP calls and reset to page one. Retry reloads the catalogue. Preserve async-pipe
+  teardown; clamp pages after membership changes. [book-pagination.component.ts](book-pagination.component.ts) presents
+  Previous/Next, page status, and native page selection; the default page size is ten.
 - [book-item.component.ts](book-item.component.ts) presents its `Book` input and links the title to the details route.
   Keep it free of HTTP requests. Use [book-cover.component.ts](book-cover.component.ts) for both missing and broken covers;
   its image failure state resets when the source changes.
@@ -28,12 +30,14 @@ query lifecycle and error-reporting boundaries.
   list empty results are successful empty arrays, and details add a feature-specific not-found outcome. Keep the page
   templates in their adjacent HTML files and subscribe once through the async pipe.
 - [book-library.service.ts](book-library.service.ts) owns browser-only saved IDs, reading statuses, unique recent IDs,
-  and metadata edits keyed by stable book ID. Initialize storage explicitly through the app initializer. Constructor
+  local created books, column order, and metadata edits keyed by stable book ID. Initialize storage explicitly through the app initializer. Constructor
   injection must not read storage. Persist only through commands and disclose storage failures while retaining session
-  usability. [book-library.ts](book-library.ts) validates stored data and applies local overrides.
+  usability. [book-library.ts](book-library.ts) validates stored data, preserves older storage shapes, and applies local overrides.
 - [book-edit.component.ts](book-edit.component.ts) loads the original book and supplies a separate editing draft to
   [book-edit-form.component.ts](book-edit-form.component.ts). Save updates browser state; Cancel must not mutate the book.
   Preserve IDs, keep price as display text, and validate a nonblank title and positive whole-number page count.
+- [book-create.component.ts](book-create.component.ts) reuses that form. Keep new `local-` UUIDs distinct from ISBNs.
+  Details/edit routes resolve created records from the library before making HTTP requests.
 - Editing and collection filters use typed reactive forms. Copy incoming editor data into the independent form in
   `ngOnChanges`; changes to the draft must never mutate the input book. Filter input synchronization suppresses form
   emissions; its user-change subscription uses `takeUntilDestroyed`. Clear resets all controls and emits once.
@@ -42,9 +46,12 @@ query lifecycle and error-reporting boundaries.
   and camera controls. [book-universe-layout.ts](book-universe-layout.ts) provides pure deterministic constellation layout
   by publisher/author. Keep it free of HTTP, storage, and navigation side effects; the preview uses the existing details
   link and shared cover component. Preserve keyboard access, native selection, drag/zoom/Fit, and narrow-screen usability.
-- Gallery/Universe display selection is independent of collection membership. `CollectionPage.matchingBooks` contains all
-  filtered/sorted matches for the map; `books` remains the limited gallery page. Switching display must preserve the
-  query and existing subscription. Keep loading/error/empty UI owned by the collection page in both displays.
+- Gallery/Universe/Reading list display selection is independent of collection membership. `CollectionPage.matchingBooks`
+  contains all filtered/sorted matches for the map and board; `books` contains only the current gallery page. Switching
+  display preserves the query and existing subscription. Collection request feedback remains owned by the page.
+- [book-reading-board.component.ts](book-reading-board.component.ts) presents the three reading columns, CDK drag/drop,
+  and native add/status/remove controls. Defer its code until its tab is selected. The library service owns status and
+  order for every display. Use stable ID anchors when moving filtered cards; do not overwrite hidden card order.
 
 ## API and navigation contracts
 
@@ -52,12 +59,12 @@ query lifecycle and error-reporting boundaries.
   application configuration, not embedded in the API client.
 - `getBooks()` reads the full catalogue. Search, sorting, filters, and visible-result limits operate on the merged local
   collection so browser-edited fields participate correctly; never filter only the first already-visible books.
-- All catalogue HTTP access is read-only. The user explicitly chose browser-local edits and personal state. Do not add
+- All catalogue HTTP access is read-only. The user explicitly chose browser-local creation, edits, and personal state. Do not add
   API mutations, login, or cross-account synchronization without a change in requirements.
 - `getBook(id)` fetches `/books/:id`, URL-encodes the ID, and marks HTTP 404 as an expected local outcome through request
   context. Other HTTP failures are reported centrally and rethrown. Verify the backend contract before changing endpoints,
   parameters, or model fields.
-- The collection is at `/`, details at `/books/:id`, and editing at `/books/:id/edit`, configured in
+- The collection is at `/`, creation at `/books/new` (before the dynamic ID route), details at `/books/:id`, and editing at `/books/:id/edit`, configured in
   [app.routes.ts](../app.routes.ts).
   Details must work on direct navigation and browser refresh without relying on previously loaded list data.
 - Keep title links keyboard-accessible and provide a link back to the collection.
@@ -78,5 +85,6 @@ query lifecycle and error-reporting boundaries.
   requests and retries, missing books, missing/broken covers, and a narrow viewport without a subtitle. Verify affected
   behavior beyond these cases when needed. The list/error suites also cover actual title matching, sorting, combined
   filters, replacement of typing delays, clearing, full-catalogue matching before limits, failures, and reporting.
-  Library checks cover persistence, recent ordering, local edits without HTTP writes, cancel, validation, isolation, and
-  storage failures. Tests must assert observable behavior, not obsolete per-search HTTP traffic.
+  Library checks cover persistence, recent ordering, local creation/editing without HTTP writes, cancel, validation,
+  isolation, storage failures, board migration, real CDK dragging, and reordering/reload. List checks include numbered
+  pagination, query resets, and clamping. Tests assert observable behavior, not obsolete per-search HTTP traffic.

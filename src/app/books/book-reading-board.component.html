@@ -1,0 +1,94 @@
+<section aria-labelledby="reading-board-title" class="rounded-xl border border-divider bg-surface p-4 sm:p-6">
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h2 id="reading-board-title" class="text-2xl font-bold text-accent">Reading list</h2>
+      <p class="mt-2 text-sm text-secondary">Drag cards between lists, or use a book’s reading status menu.</p>
+      <p class="mt-1 text-sm text-secondary">
+        {{ cardCount() }} {{ cardCount() === 1 ? 'book' : 'books' }} on your reading list
+      </p>
+    </div>
+    <div class="grid w-full min-w-0 gap-3 sm:w-auto sm:grid-cols-[minmax(12rem,1fr)_auto] sm:items-end">
+      <label class="grid min-w-0 gap-1 text-sm font-medium">
+        Add book to reading list
+        <select #bookSelector class="form-control" [value]="selectedId()" (change)="selectedId.set(bookSelector.value)">
+          <option value="">Choose a book</option>
+          @for (book of availableBooks(); track book.id) {
+            <option [value]="book.id">{{ book.title }}</option>
+          }
+        </select>
+      </label>
+      <button type="button" class="button-primary" [disabled]="!selectedId()" (click)="addBook()">
+        Add to reading list
+      </button>
+    </div>
+  </div>
+  <p role="status" class="sr-only">{{ announcement() }}</p>
+  <div cdkDropListGroup class="grid min-w-0 gap-5 lg:grid-cols-3">
+    @for (column of columns(); track column.status) {
+      <section
+        [attr.aria-labelledby]="'reading-' + column.status"
+        class="min-w-0 rounded-xl border border-divider bg-muted-surface p-3"
+      >
+        <h3 [id]="'reading-' + column.status" class="mb-3 flex items-center justify-between gap-3 font-semibold">
+          {{ column.label }}
+          <span aria-hidden="true" class="rounded-full bg-surface px-2 py-1 text-xs">{{ column.books.length }}</span>
+        </h3>
+        <ul
+          cdkDropList
+          [cdkDropListData]="column"
+          (cdkDropListDropped)="drop($event)"
+          [attr.aria-label]="column.label + ' books'"
+          class="grid min-h-40 content-start gap-3 rounded-lg"
+        >
+          @for (book of column.books; track book.id) {
+            <li
+              cdkDrag
+              [cdkDragData]="book"
+              [attr.aria-label]="book.title"
+              class="min-w-0 rounded-lg border border-divider bg-surface p-4 shadow-sm"
+            >
+              <div class="flex min-w-0 items-start gap-3">
+                <div class="min-w-0 flex-1">
+                  <a [routerLink]="['/books', book.id]" class="text-link break-words font-semibold">{{ book.title }}</a>
+                  <p class="mt-1 break-words text-sm text-secondary">{{ book.author || 'Unknown author' }}</p>
+                </div>
+                <button
+                  type="button"
+                  cdkDragHandle
+                  [attr.aria-label]="'Move ' + book.title"
+                  class="focus-ring shrink-0 cursor-grab rounded border border-divider px-2 py-1 text-secondary active:cursor-grabbing"
+                >
+                  <span aria-hidden="true">⠿</span>
+                </button>
+              </div>
+              <label class="mt-4 grid gap-1 text-xs font-medium">
+                Reading status
+                <select
+                  #statusSelector
+                  [attr.aria-label]="'Reading status for ' + book.title"
+                  [value]="column.status"
+                  (change)="changeStatus(book, statusSelector.value)"
+                  class="form-control"
+                >
+                  <option value="want-to-read">Want to read</option>
+                  <option value="reading">Currently reading</option>
+                  <option value="finished">Read</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                class="text-link mt-3 text-xs"
+                [attr.aria-label]="'Remove ' + book.title + ' from reading list'"
+                (click)="removeBook(book)"
+              >
+                Remove
+              </button>
+            </li>
+          } @empty {
+            <li role="presentation" class="p-4 text-center text-sm text-muted">No books in this list yet.</li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+</section>

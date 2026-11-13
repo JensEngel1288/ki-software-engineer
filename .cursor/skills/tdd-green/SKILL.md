@@ -55,6 +55,10 @@ Keep production behavior independent of the test runner and test data. Do not mo
 suppress failures, weaken validation, or replace a real interaction with a test-only shortcut. Preserve accepted behavior
 outside the selected change. Defer unrelated cleanup, abstractions, dependency changes, and speculative capabilities.
 
+For browser-local collection changes, reuse the shared library state rather than creating a separate board/status store.
+Add storage fields compatibly with existing saved data, and resolve locally created IDs before requesting API records.
+Keep the full collection projection ahead of pagination so local edits and created books participate in matching.
+
 Rerun the focused cases after a meaningful change. Use remaining failures to refine the implementation, not to gradually
 relax the expected outcome. Continue until the selected cases pass or a specific unresolved requirement or prerequisite
 prevents verification.

@@ -50,6 +50,10 @@ Check constraints as well as visible features: persistence/API boundaries, error
 other outcomes actually agreed. Compare tests with the source criteria so a mistaken or weakened assertion cannot
 silently redefine delivery. Preserve acceptance expectations and all meaningful scenario coverage.
 
+For mixed existing/new features, retain Already Green evidence alongside new Red-to-Green cases and explicitly record
+superseded behavior. For persisted boards, verify real dragging, native status changes, reload/order, and legacy stored
+state rather than inferring persistence from a passing in-memory move.
+
 When an unmet criterion falls within the existing implementation authorisation, continue through
 [tdd-red](../tdd-red/SKILL.md) and [tdd-green](../tdd-green/SKILL.md) as appropriate, then resume finalisation. Do not stop
 at a gap report when the authorised fix can be completed. Resolve genuine requirement decisions with the user instead

@@ -1,5 +1,6 @@
 import { AsyncPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, input, OnChanges, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { BehaviorSubject, catchError, combineLatest, map, of, startWith, Subject, switchMap, timer } from 'rxjs';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator.component';
 import { StateMessageComponent } from '../shared/state-message.component';
@@ -17,6 +18,8 @@ import { BookFiltersComponent } from './book-filters.component';
 import { BookItemComponent } from './book-item.component';
 import { BookLibraryService } from './book-library.service';
 import { BookUniverseComponent } from './book-universe.component';
+import { BookPaginationComponent } from './book-pagination.component';
+import { BookReadingBoardComponent } from './book-reading-board.component';
 import { RequestState } from './request-state';
 
 @Component({
@@ -24,9 +27,12 @@ import { RequestState } from './request-state';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncPipe,
+    RouterLink,
     BookItemComponent,
     BookFiltersComponent,
     BookUniverseComponent,
+    BookPaginationComponent,
+    BookReadingBoardComponent,
     LoadingIndicatorComponent,
     StateMessageComponent
   ],
@@ -38,22 +44,29 @@ export class BookListComponent implements OnChanges {
   protected readonly library = inject(BookLibraryService);
   private readonly reloadRequests = new Subject<void>();
   private readonly events = new BehaviorSubject<{ query: CollectionQuery; delayMs: number }>({
-    query: { ...defaultFilters, search: '', view: 'all', limit: 10 },
+    query: { ...defaultFilters, search: '', view: 'all', limit: 10, page: 1 },
     delayMs: 0
   });
 
   protected readonly searchTerm = signal('');
-  protected readonly displayMode = signal<'gallery' | 'universe'>('gallery');
+  protected readonly displayMode = signal<'gallery' | 'universe' | 'reading'>('gallery');
+  private readonly displays = ['gallery', 'universe', 'reading'] as const;
 
   ngOnChanges(): void {
-    this.updateQuery({ limit: this.pageSize() });
+    this.updateQuery({ limit: this.pageSize(), page: 1 });
   }
 
   protected onDisplayKeydown(event: KeyboardEvent): void {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
-    const index = event.key === 'Home' ? 0 : event.key === 'End' ? 1 : this.displayMode() === 'gallery' ? 1 : 0;
-    this.displayMode.set(index === 0 ? 'gallery' : 'universe');
+    const current = this.displays.indexOf(this.displayMode());
+    const index =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? this.displays.length - 1
+          : (current + (event.key === 'ArrowRight' ? 1 : -1) + this.displays.length) % this.displays.length;
+    this.displayMode.set(this.displays[index]);
     (event.currentTarget as HTMLButtonElement).parentElement
       ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
       .item(index)
@@ -98,19 +111,19 @@ export class BookListComponent implements OnChanges {
   protected onSearchChange(value: string): void {
     this.searchTerm.set(value);
     const search = value.trim();
-    if (search !== this.query.search) this.updateQuery({ search, limit: this.pageSize() }, search ? 300 : 0);
+    if (search !== this.query.search) this.updateQuery({ search, limit: this.pageSize(), page: 1 }, search ? 300 : 0);
   }
   protected clearSearch(): void {
     this.onSearchChange('');
   }
   protected setView(view: CollectionView): void {
-    this.updateQuery({ view, limit: this.pageSize() });
+    this.updateQuery({ view, limit: this.pageSize(), page: 1 });
   }
   protected onFiltersChange(filters: BookFilters): void {
-    this.updateQuery({ ...filters, limit: this.pageSize() });
+    this.updateQuery({ ...filters, limit: this.pageSize(), page: 1 });
   }
-  protected showMore(): void {
-    this.updateQuery({ limit: this.query.limit + this.pageSize() });
+  protected goToPage(page: number): void {
+    this.updateQuery({ page });
   }
   protected retry(): void {
     this.reloadRequests.next();

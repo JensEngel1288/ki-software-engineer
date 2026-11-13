@@ -22,6 +22,7 @@ import { ReadingStatus } from './book-library';
 })
 export class BookFiltersComponent implements OnChanges, OnInit {
   readonly filters = input.required<BookFilters>();
+  readonly allowSorting = input(true);
   readonly filtersChange = output<BookFilters>();
   private readonly destroyRef = inject(DestroyRef);
   protected readonly form = new FormGroup({

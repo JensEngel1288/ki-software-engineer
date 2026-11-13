@@ -1,15 +1,17 @@
 <div [formGroup]="form" class="mb-6 rounded-xl border border-divider bg-surface p-4">
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    <label class="grid gap-1 text-sm font-medium"
-      >Sort books
-      <select formControlName="sort" class="form-control">
-        <option value="default">Default order</option>
-        <option value="title-asc">Title: A–Z</option>
-        <option value="title-desc">Title: Z–A</option>
-        <option value="author-asc">Author: A–Z</option>
-        <option value="author-desc">Author: Z–A</option>
-      </select>
-    </label>
+    @if (allowSorting()) {
+      <label class="grid gap-1 text-sm font-medium"
+        >Sort books
+        <select formControlName="sort" class="form-control">
+          <option value="default">Default order</option>
+          <option value="title-asc">Title: A–Z</option>
+          <option value="title-desc">Title: Z–A</option>
+          <option value="author-asc">Author: A–Z</option>
+          <option value="author-desc">Author: Z–A</option>
+        </select>
+      </label>
+    }
     <label class="grid gap-1 text-sm font-medium"
       >Filter by author
       <input type="text" formControlName="author" class="form-control" placeholder="Any author" />

@@ -70,6 +70,11 @@ Use ordinary typed functions and existing services when they express the boundar
   browser-local edits must remain local and catalogue access remains read-only; refactoring cannot add synchronization.
 - Existing NgRx, query, and SSR packages do not justify introducing them. Keep dependencies and lockfiles unchanged unless
   a separately authorized change requires otherwise.
+- Reuse the validated editor fields for creation/editing with focused action inputs. Keep ID generation and persistence
+  in the library service. Board columns share that service's statuses and ordering; filtered drag operations use stable
+  ID anchors rather than treating visible indices as the full stored order.
+- Evaluate heavy optional interactions against build output. Defer the standalone reading board inside its selected-tab
+  branch so CDK loads when needed; preserve loading/error feedback and test the real tab and drag interactions.
 
 ## Validation context
 
@@ -78,3 +83,6 @@ BookMonkey's application Playwright suites use API/cover fixtures; external demo
 The Jasmine/Karma scaffold is not an established unit harness at skill creation. Recheck its dependencies/specs before
 claiming unit verification, and disclose omitted browser projects or environment limits. Keep machine-specific paths out
 of committed runner configuration.
+
+Inspect narrow-screen screenshots as well as overflow assertions: a native selector can fit the viewport while being
+too cramped beside an action button. Keep labels and selected values usable in both themes.

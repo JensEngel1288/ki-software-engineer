@@ -68,7 +68,8 @@ export class BookDetailsComponent {
     if (!id) {
       return of({ status: 'not-found' });
     }
-    return this.api.getBook(id).pipe(
+    const local = this.library.getCreatedBook(id);
+    return (local ? of(local) : this.api.getBook(id)).pipe(
       tap(book => {
         if (book) this.library.recordViewed(book.id);
       }),

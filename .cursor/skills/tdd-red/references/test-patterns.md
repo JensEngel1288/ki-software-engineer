@@ -53,7 +53,8 @@ describe('[R1] One-letter title search', () => {
       ...defaultFilters,
       search: 'j',
       view: 'all',
-      limit: 10
+      limit: 10,
+      page: 1
     });
 
     // Then
@@ -95,3 +96,16 @@ Use the actual agreed persistence boundary in further scenarios. BookMonkey curr
 statuses, and recently viewed IDs in this browser, with read-only catalogue HTTP access. Tests should interact through
 the UI to create persisted state and reload when persistence is the criterion. Do not prepopulate the final result or
 mock the feature's own save command to claim the persistence scenario works.
+
+## Creation, pagination, and reading board
+
+- Scope request monitors to `apiUrl`, not just `/books/`: frontend document navigation uses that path too. Verify that
+  local creation/editing makes no API mutation and local-ID details do not issue a single-book API read.
+- Test matching/sorting before pagination, query resets, page bounds, and clamping after membership shrinks. An explicit
+  pagination requirement supersedes earlier expanding-list assertions; record that amendment rather than retaining two
+  incompatible expectations.
+- Exercise CDK drag with real pointer movement from the handle, not a call to the component's drop method. After mouse
+  release, wait for `.cdk-drag-preview` to disappear before the next drag; animation clones can temporarily duplicate
+  accessible names. Use observable state synchronization rather than fixed sleeps or longer retries.
+- Verify native status controls separately from dragging. Reload to check column and card-order persistence. Seed the
+  old storage shape only for a migration scenario; otherwise create state through the UI, preserving it on reload.

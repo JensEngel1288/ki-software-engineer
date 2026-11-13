@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, OnChanges, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, OnChanges, output, SimpleChanges } from '@angular/core';
 import {
   AbstractControl,
   FormControl,
@@ -25,6 +25,8 @@ function positivePageCount(control: AbstractControl<number | null>): ValidationE
 export class BookEditFormComponent implements OnChanges {
   readonly book = input.required<Book>();
   readonly save = output<BookEdits>();
+  readonly submitLabel = input('Save changes');
+  readonly cancelLink = input<string[] | null>(null);
   protected readonly form = new FormGroup({
     title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/)] }),
     subtitle: new FormControl('', { nonNullable: true }),
@@ -37,7 +39,8 @@ export class BookEditFormComponent implements OnChanges {
     abstract: new FormControl('', { nonNullable: true })
   });
 
-  ngOnChanges(): void {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['book']) return;
     const { title, subtitle = '', author, publisher, isbn, numPages, price, cover, abstract } = this.book();
     this.form.reset({ title, subtitle, author, publisher, isbn, numPages, price, cover, abstract });
   }

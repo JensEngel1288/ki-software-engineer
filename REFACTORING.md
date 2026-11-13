@@ -304,3 +304,41 @@ for broken-to-valid cover recovery, preserved selection, camera reset on new
 matches, and fallback selection after filtering. Existing test assertions and
 package manifests/lockfile were preserved. The local runner uses the installed
 Chromium; Firefox/WebKit and the incomplete Karma scaffold were not run.
+
+## Creation, pagination, and reading board — 2026-11-13
+
+The requested features reuse the existing editor instead of adding a second form.
+The shared form accepts a submit label and Cancel route; only a changed book input
+resets its independent draft. Creation and editing resolve local records through
+the existing library service, which also owns board status and order. No new store,
+HTTP write, dependency, or constructor side effect was introduced.
+
+The collection projection merges local books before applying edits, matching,
+filters, and sorting, then clamps/slices a numbered page. Universe and the board
+consume all matching books. The obsolete expanding-limit `hasMore` state was
+removed. Pagination controls and board interaction have separate component owners.
+
+Critical review found that the first board implementation loaded CDK with every
+collection visit. A deferred standalone board now loads inside its selected-tab
+branch with loading/error feedback. The collection chunk changed from 102.08 kB
+to 32.95 kB, with a separate 69.86 kB board chunk. The final initial bundle is
+318.56 kB; shared runtime/chunk splitting means this is not an initial-bundle
+reduction relative to the 312.23 kB first feature build.
+
+Screenshot review also caught a cramped add-book selector at 320px despite a
+passing horizontal-overflow check. Its controls now stack on small screens.
+The board retains native status menus, announcements, semantic theme colors,
+reduced-motion handling, and stable ID anchors for filtered drag operations.
+
+The workflow started from 42 passing Chromium cases. All 13 new/amended scenarios
+were verified Red before production work, then Green. The complete six-suite
+regression run passed all 54 cases without skips or retries. A second complete
+library-suite run passed all 17 cases after the final mobile layout change. Build and acceptance evidence
+are recorded in [.cursor/context/current-requirement.md](.cursor/context/current-requirement.md).
+
+Prepared skills were refined from observed issues: distinguish Already Green work,
+scope API monitors to the API origin, wait for CDK animation preview cleanup,
+preserve legacy browser state, reuse form/state owners, and reconcile mixed
+existing/new requirements. No acceptance assertion was relaxed: the old Show more
+case was explicitly superseded by pagination; C1's URL monitor and the drag helper
+received documented test-owned corrections.

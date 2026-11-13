@@ -22,6 +22,10 @@ Inspect repository context read-only as needed to learn existing capabilities an
 user for facts the repository can establish, or infer desired behavior from the current implementation. A GitHub issue
 number is not required to interview a user about a new feature.
 
+For a bundle of requested features, identify which already exist and need regression coverage. Reuse earlier storage
+decisions and ask only about a materially new persistence boundary. Existing working behavior is an Already Green
+baseline, not a reason to recreate the feature or manufacture failing tests.
+
 ## Ask one focused question at a time
 
 Ask the next question that most reduces uncertainty about the desired outcome. Use the environment's question tool when

@@ -2,9 +2,10 @@
   <div class="mb-6 border-b border-divider pb-4">
     <h1 class="text-3xl font-bold text-accent">Book Collection</h1>
     <p class="mt-2 text-sm text-secondary">Your saved books, reading status, and edits stay in this browser.</p>
+    <a routerLink="/books/new" class="button-primary mt-4 inline-block">Add book</a>
   </div>
   <div
-    class="mb-6 flex gap-1 rounded-xl border border-divider bg-muted-surface p-1 sm:w-fit"
+    class="mb-6 flex flex-wrap gap-1 rounded-xl border border-divider bg-muted-surface p-1 sm:w-fit"
     role="tablist"
     aria-label="Book display"
   >
@@ -43,6 +44,19 @@
       </svg>
       Universe
     </button>
+    <button
+      id="reading-tab"
+      type="button"
+      role="tab"
+      class="button-secondary flex-1 sm:flex-none"
+      aria-controls="reading-panel"
+      [attr.aria-selected]="displayMode() === 'reading'"
+      [attr.tabindex]="displayMode() === 'reading' ? 0 : -1"
+      (click)="displayMode.set('reading')"
+      (keydown)="onDisplayKeydown($event)"
+    >
+      Reading list
+    </button>
   </div>
   <div class="mb-6 flex flex-wrap gap-2" role="group" aria-label="Collection views">
     <button type="button" class="button-secondary" [attr.aria-pressed]="query.view === 'all'" (click)="setView('all')">
@@ -80,7 +94,11 @@
       <button type="button" aria-label="Clear search" (click)="clearSearch()" class="button-secondary">Clear</button>
     }
   </div>
-  <app-book-filters [filters]="query" (filtersChange)="onFiltersChange($event)"></app-book-filters>
+  <app-book-filters
+    [filters]="query"
+    [allowSorting]="displayMode() !== 'reading'"
+    (filtersChange)="onFiltersChange($event)"
+  ></app-book-filters>
   <div
     role="tabpanel"
     [id]="displayMode() + '-panel'"
@@ -100,11 +118,28 @@
           </app-state-message>
         }
         @case ('ready') {
-          <p class="mb-5 text-sm text-secondary" aria-live="polite">
-            {{ state.data.total }} matching books ·
-            {{ displayMode() === 'universe' ? state.data.total : state.data.books.length }} shown
-          </p>
-          @if (displayMode() === 'universe' && state.data.total > 0) {
+          @if (displayMode() !== 'reading') {
+            <p class="mb-5 text-sm text-secondary" aria-live="polite">
+              {{ state.data.total }} matching books ·
+              {{ displayMode() === 'universe' ? state.data.total : state.data.books.length }} shown
+            </p>
+          }
+          @if (displayMode() === 'reading') {
+            @defer (on immediate) {
+              <app-book-reading-board
+                [books]="state.data.matchingBooks"
+                [library]="state.data.library"
+                (statusChange)="library.setReadingStatus($event.id, $event.status)"
+                (move)="library.moveReadingBook($event.id, $event.status, $event.beforeId)"
+              ></app-book-reading-board>
+            } @loading {
+              <app-loading-indicator message="Loading reading list..."></app-loading-indicator>
+            } @error {
+              <app-state-message role="alert" message="Refresh the page to try again.">
+                <h2 state-title class="state-title">Unable to load reading list</h2>
+              </app-state-message>
+            }
+          } @else if (displayMode() === 'universe' && state.data.total > 0) {
             <app-book-universe [books]="state.data.matchingBooks"></app-book-universe>
           } @else {
             <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -126,10 +161,12 @@
               }
             </div>
           }
-          @if (displayMode() === 'gallery' && state.data.hasMore) {
-            <div class="mt-8 text-center">
-              <button type="button" class="button-primary" (click)="showMore()">Show more books</button>
-            </div>
+          @if (displayMode() === 'gallery' && state.data.total > 0) {
+            <app-book-pagination
+              [page]="state.data.page"
+              [pageCount]="state.data.pageCount"
+              (pageChange)="goToPage($event)"
+            ></app-book-pagination>
           }
         }
       }

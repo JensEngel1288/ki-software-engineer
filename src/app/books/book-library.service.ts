@@ -1,7 +1,17 @@
 import { DOCUMENT } from '@angular/common';
 import { inject, Injectable, signal } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { BookEdits, BookLibrary, emptyLibrary, isBookEdits, parseLibrary, ReadingStatus } from './book-library';
+import { Book } from './book';
+import {
+  BookEdits,
+  BookLibrary,
+  emptyLibrary,
+  emptyReadingOrder,
+  isBookEdits,
+  parseLibrary,
+  ReadingStatus,
+  readingStatuses
+} from './book-library';
 
 @Injectable({ providedIn: 'root' })
 export class BookLibraryService {
@@ -38,10 +48,44 @@ export class BookLibraryService {
   }
 
   setReadingStatus(id: string, status: ReadingStatus | ''): void {
+    if (status) {
+      if (this.snapshot.readingStatuses[id] !== status) this.moveReadingBook(id, status);
+      return;
+    }
     const statuses = { ...this.snapshot.readingStatuses };
-    if (status) statuses[id] = status;
-    else delete statuses[id];
-    this.update({ ...this.snapshot, readingStatuses: statuses });
+    delete statuses[id];
+    const readingOrder = this.orderWithout(id);
+    this.update({ ...this.snapshot, readingStatuses: statuses, readingOrder });
+  }
+
+  moveReadingBook(id: string, status: ReadingStatus, beforeId?: string): void {
+    const readingOrder = this.orderWithout(id);
+    const index = beforeId ? readingOrder[status].indexOf(beforeId) : -1;
+    readingOrder[status].splice(index < 0 ? readingOrder[status].length : index, 0, id);
+    this.update({
+      ...this.snapshot,
+      readingStatuses: { ...this.snapshot.readingStatuses, [id]: status },
+      readingOrder
+    });
+  }
+
+  private orderWithout(id: string): Record<ReadingStatus, string[]> {
+    const order = emptyReadingOrder();
+    for (const status of readingStatuses)
+      order[status] = this.snapshot.readingOrder[status].filter(value => value !== id);
+    return order;
+  }
+
+  createBook(edits: BookEdits): string {
+    if (!isBookEdits(edits)) throw new Error('Invalid book changes');
+    const id = `local-${globalThis.crypto.randomUUID()}`;
+    const book: Book = { ...edits, id, userId: 0 };
+    this.update({ ...this.snapshot, createdBooks: [book, ...this.snapshot.createdBooks] });
+    return id;
+  }
+
+  getCreatedBook(id: string): Book | undefined {
+    return this.snapshot.createdBooks.find(book => book.id === id);
   }
 
   recordViewed(id: string): void {

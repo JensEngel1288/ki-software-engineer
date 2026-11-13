@@ -117,7 +117,7 @@ test('debounces typing, replaces pending terms and clears without extra API requ
   expect(requests).toHaveLength(1);
 });
 
-test('searches the full catalogue before limiting visible results', async ({ page }) => {
+test('[P1] searches the full catalogue before paginating visible results', async ({ page }) => {
   const books = Array.from({ length: 12 }, (_, index) => ({
     ...book,
     id: String(index),
@@ -126,10 +126,84 @@ test('searches the full catalogue before limiting visible results', async ({ pag
   await mockBooks(page, books);
   await page.goto(appUrl);
   await expect(page.locator('app-book-item')).toHaveCount(10);
-  await page.getByRole('button', { name: 'Show more books' }).click();
-  await expect(page.locator('app-book-item')).toHaveCount(12);
+  await page.getByRole('button', { name: 'Next page', exact: true }).click();
+  await expect(page.locator('app-book-item')).toHaveCount(2);
   await page.getByLabel('Search books', { exact: true }).fill('j');
   await expect(page.locator('app-book-item h2')).toHaveText(['Java Beyond The First Page']);
+});
+
+test('[P2] navigates numbered pages with correct bounds and no extra catalogue requests', async ({ page }) => {
+  const books = Array.from({ length: 23 }, (_, index) => ({
+    ...book,
+    id: `page-${index}`,
+    title: `Book ${index + 1}`
+  }));
+  await mockBooks(page, books);
+  let requests = 0;
+  page.on('request', request => {
+    if (request.url() === apiUrl) requests++;
+  });
+  await page.goto(appUrl);
+  const titles = page.locator('app-book-item h2');
+  await expect(titles).toHaveText(books.slice(0, 10).map(book => book.title));
+  await expect(page.getByRole('button', { name: 'Previous page', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Next page', exact: true }).click();
+  await expect(titles).toHaveText(books.slice(10, 20).map(book => book.title));
+  await page.getByRole('combobox', { name: 'Go to page', exact: true }).selectOption('3');
+  await expect(titles).toHaveText(books.slice(20).map(book => book.title));
+  await expect(page.getByRole('button', { name: 'Next page', exact: true })).toBeDisabled();
+  await expect(page.getByText('Page 3 of 3', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Previous page', exact: true }).click();
+  await expect(titles).toHaveText(books.slice(10, 20).map(book => book.title));
+  expect(requests).toBe(1);
+});
+
+test('[P3] queries reset the page while Universe continues to show all matches', async ({ page }) => {
+  const books = Array.from({ length: 23 }, (_, index) => ({
+    ...book,
+    id: `query-${index}`,
+    title: `Title ${index + 1}`
+  }));
+  await mockBooks(page, books);
+  await page.goto(appUrl);
+  await page.getByRole('combobox', { name: 'Go to page', exact: true }).selectOption('3');
+  await page.getByRole('tab', { name: 'Universe', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^Select book:/ })).toHaveCount(23);
+  await page.getByRole('tab', { name: 'Gallery', exact: true }).click();
+  await expect(page.getByText('Page 3 of 3', { exact: true })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Sort books', exact: true }).selectOption('title-desc');
+  await expect(page.getByText('Page 1 of 3', { exact: true })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Go to page', exact: true }).selectOption('2');
+  await page.getByLabel('Search books', { exact: true }).fill('Title 23');
+  await expect(page.locator('app-book-item h2')).toHaveText(['Title 23']);
+  await expect(page.getByText('Page 1 of 1', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Clear search', exact: true }).click();
+  await expect(page.getByText('Page 1 of 3', { exact: true })).toBeVisible();
+});
+
+test('[P4] removing the final item on a saved page clamps to a remaining page', async ({ page }) => {
+  const books = Array.from({ length: 11 }, (_, index) => ({
+    ...book,
+    id: `saved-${index}`,
+    title: `Saved ${index + 1}`
+  }));
+  await mockBooks(page, books);
+  await page.addInitScript(
+    ids => {
+      localStorage.setItem(
+        'bookmonkey-library-v1',
+        JSON.stringify({ savedIds: ids, readingStatuses: {}, recentIds: [], edits: {} })
+      );
+    },
+    books.map(book => book.id)
+  );
+  await page.goto(appUrl);
+  await page.getByRole('button', { name: 'Read later', exact: true }).click();
+  await page.getByRole('button', { name: 'Next page', exact: true }).click();
+  await expect(page.locator('app-book-item')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Remove from read later', exact: true }).click();
+  await expect(page.locator('app-book-item')).toHaveCount(10);
+  await expect(page.getByText('Page 1 of 1', { exact: true })).toBeVisible();
 });
 
 test('leaving the list tears down pending typing work', async ({ page }) => {
